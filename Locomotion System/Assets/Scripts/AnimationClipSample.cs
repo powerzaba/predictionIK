@@ -1,11 +1,22 @@
-﻿using UnityEditor;
-using UnityEngine;
-using System.IO;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
 
 public class AnimationClipSample
 {
+    private AnimationClip _clip;
+    private List<AnimationClip> _errorList;
+    private int _sampleNumber;
+    private float _groundLevel;
+    private string _logPath;
+
+    private string[] bindingNames = { "RightFootT.x", "RightFootT.z", "RightFootT.y",
+                                      "LeftFootT.x", "LeftFootT.z", "LeftFootT.y",
+                                      "RootT.x", "RootT.z", "RootT.y", "RootQ.x",
+                                      "RootQ.y", "RootQ.z", "RootQ.w"};
+
     private (float[] val, float[] times) rightSampleX;
     private (float[] val, float[] times) rightSampleY;
     private (float[] val, float[] times) rightSampleZ;
@@ -18,10 +29,8 @@ public class AnimationClipSample
     private (float[] val, float[] times) rootSampleX;
     private (float[] val, float[] times) rootSampleY;
 
-    private AnimationClip _clip;
-    private List<AnimationClip> _errorList;
-    private int _sampleNumber;
-    private float _groundLevel;
+    private (Quaternion[] rotation, float[] time) rootRotation;
+    private (Vector3[] position, float[] time) rootPosition;
 
     //TODO set threshold values for ground level from the editor
     private float thresholdGround = 0.1f;
@@ -33,6 +42,7 @@ public class AnimationClipSample
         _clip = clip;
         _sampleNumber = sampleNumber;
         _errorList = errorList;
+        _logPath = Directory.GetCurrentDirectory() + @"\Assets\AnimationLogData\";
     }
 
     private void SampleAnimation(bool shouldLog)
@@ -40,7 +50,6 @@ public class AnimationClipSample
         foreach (var binding in AnimationUtility.GetCurveBindings(_clip))
         {
             AnimationCurve curve = AnimationUtility.GetEditorCurve(_clip, binding);
-
             if (binding.propertyName == "RightFootT.x")
             {
                 rightSampleX = SampleAndLog(_clip, curve, "_rightFootX", shouldLog);
@@ -82,33 +91,31 @@ public class AnimationClipSample
 
     private (float[] val, float[] times) SampleAndLog(AnimationClip clip, AnimationCurve curve, string name, bool shouldLog)
     {
-        float startTime = curve.keys[0].time;
-        float endTime = curve.keys[curve.length - 1].time;
-        float step = endTime / _sampleNumber;
-        float start = 0f;
+        float duration = curve.keys[curve.length - 1].time;
+        float step = duration / _sampleNumber;
+        float start = 0f;        
         float[] valueArray = new float[_sampleNumber];
         float[] timeArray = new float[_sampleNumber];
 
         for (int i = 0; i < _sampleNumber; i++)
         {
             float val = curve.Evaluate(start);
-
             valueArray[i] = val;
             timeArray[i] = start;
-
-            start += step;
-            if (shouldLog)
-                LogData(clip.name + name, val.ToString());
+            start += step;            
         }
+
+        if (shouldLog)
+            LogData(clip.name + name, Array.ConvertAll(valueArray, e => e.ToString()));
 
         return (valueArray, timeArray);
     }
-
-    //TODO: Select a better place to store logged files
-    private void LogData(string fileName, string content)
+            
+    private void LogData(string fileName, string[] content)
     {
-        string path = Directory.GetCurrentDirectory() + @"\" + fileName + ".txt";
-        if (!File.Exists(path))
+        string path = _logPath + fileName + ".txt";
+        System.IO.File.WriteAllLines(path, content);
+        /*if (!File.Exists(path))
         {
             using (StreamWriter sw = File.CreateText(path))
             {
@@ -121,7 +128,7 @@ public class AnimationClipSample
             {
                 sw.WriteLine(content);
             }
-        }
+        }*/
     }
 
     public void AnalyzeAnimation(bool shoudLog)
@@ -174,33 +181,53 @@ public class AnimationClipSample
                                            float stepLength, string dis)
     {
         AnimationEvent[] evt = new AnimationEvent[4];
-        evt[0] = new AnimationEvent { time = lkeyTimes.lLiftTime, stringParameter = dis, functionName = "LeftFootLift",
-                                      floatParameter = stepLength };
-        evt[1] = new AnimationEvent { time = lkeyTimes.lStrikeTime, stringParameter = "L_strike", functionName = "LeftFootStrike",
-                                      floatParameter = stepLength };
-        evt[2] = new AnimationEvent { time = rkeyTimes.rLiftTime, stringParameter = "R_lift", functionName = "RightFootLift",
-                                      floatParameter = stepLength };
-        evt[3] = new AnimationEvent { time = rkeyTimes.rStrikeTime, stringParameter = "R_strike", functionName = "RightFootStrike",
-                                      floatParameter = stepLength };
+        evt[0] = new AnimationEvent
+        {
+            time = lkeyTimes.lLiftTime,
+            stringParameter = dis,
+            functionName = "LeftFootLift",
+            floatParameter = stepLength
+        };
+        evt[1] = new AnimationEvent
+        {
+            time = lkeyTimes.lStrikeTime,
+            stringParameter = "L_strike",
+            functionName = "LeftFootStrike",
+            floatParameter = stepLength
+        };
+        evt[2] = new AnimationEvent
+        {
+            time = rkeyTimes.rLiftTime,
+            stringParameter = "R_lift",
+            functionName = "RightFootLift",
+            floatParameter = stepLength
+        };
+        evt[3] = new AnimationEvent
+        {
+            time = rkeyTimes.rStrikeTime,
+            stringParameter = "R_strike",
+            functionName = "RightFootStrike",
+            floatParameter = stepLength
+        };
 
         return evt;
     }
 
     private (int, float, int, float) ReturnKeyTimes((float[] val, float[] times) axisOfMovement, (float[] val, float[] times) yAxis, AnimationClip clip)
     {
-        (int[] peaks, int[] valleys) = ReturnPeaksAndValleys(axisOfMovement);        
+        (int[] peaks, int[] valleys) = ReturnPeaksAndValleys(axisOfMovement);
         int liftIndex = 0;
         float liftTime;
         int strikeIndex = 0;
         float strikeTime;
-               
+
         //TODO: Add proper error conditions for adding a clip to the error list;
         if (peaks.Length <= 0 || valleys.Length <= 0 || peaks.Length > 2 || valleys.Length > 2)
         {
             if (_errorList != null)
             {
                 _errorList.Add(_clip);
-            }            
+            }
             return (0, 0f, 0, 0f);
         }
 
@@ -208,7 +235,7 @@ public class AnimationClipSample
         foreach (int peak in peaks)
         {
             int finalLiftIndex = (peak + thresholdCheck) % _sampleNumber;
-            
+
             for (int i = peak; i < finalLiftIndex; i++)
             {
                 float yVal = yAxis.val[i];
@@ -219,14 +246,14 @@ public class AnimationClipSample
                     minVal = yVal;
                     break;
                 }
-                
+
                 if (yVal <= _groundLevel && yVal <= minVal)
                 {
                     strikeIndex = i;
                     minVal = yVal;
                     break;
                 }
-            }                                    
+            }
         }
 
         minVal = float.MaxValue;
@@ -288,4 +315,10 @@ public class AnimationClipSample
     {
         return (a > b) && (c > b);
     }
+}
+
+public struct RootInformation
+{
+    Quaternion[] rootRotation;
+    float[] time;
 }
