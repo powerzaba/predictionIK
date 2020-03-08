@@ -11,11 +11,7 @@ public class AnimationClipSample
     private int _sampleNumber;
     private float _groundLevel;
     private string _logPath;
-
-    private string[] bindingNames = { "RightFootT.x", "RightFootT.z", "RightFootT.y",
-                                      "LeftFootT.x", "LeftFootT.z", "LeftFootT.y",
-                                      "RootT.x", "RootT.z", "RootT.y", "RootQ.x",
-                                      "RootQ.y", "RootQ.z", "RootQ.w"};
+    private float[] _timeSample;
 
     private (float[] val, float[] times) rightSampleX;
     private (float[] val, float[] times) rightSampleY;
@@ -29,8 +25,11 @@ public class AnimationClipSample
     private (float[] val, float[] times) rootSampleX;
     private (float[] val, float[] times) rootSampleY;
 
-    private (Quaternion[] rotation, float[] time) rootRotation;
-    private (Vector3[] position, float[] time) rootPosition;
+    private Vector3[] _rightLegSample;
+    private Vector3[] _leftLegSample;
+    private Vector3[] _rootPositionSample;
+    private Quaternion[] _rootRotationSample;
+    
 
     //TODO set threshold values for ground level from the editor
     private float thresholdGround = 0.1f;
@@ -43,6 +42,140 @@ public class AnimationClipSample
         _sampleNumber = sampleNumber;
         _errorList = errorList;
         _logPath = Directory.GetCurrentDirectory() + @"\Assets\AnimationLogData\";
+        _timeSample = new float[_sampleNumber];
+
+        SampleTime();
+    }
+
+    private void SampleTime()
+    {
+        float duration = _clip.length;
+        float step = duration / _sampleNumber;
+        float currentTime = 0f;
+
+        for (int i = 0; i < _sampleNumber; i++)
+        {
+            _timeSample[i] = currentTime;
+            currentTime += step;
+        }
+    }
+
+    //TODO: remove the log from this function
+    private Vector3[] CreateVectorSample(EditorCurveBinding[] bindings, bool shouldLog, string name)
+    {
+        float x = 0;
+        float y = 0;
+        float z = 0;
+        float time = 0;
+        var xCurve = AnimationUtility.GetEditorCurve(_clip, bindings[0]);
+        var yCurve = AnimationUtility.GetEditorCurve(_clip, bindings[1]);
+        var zCurve = AnimationUtility.GetEditorCurve(_clip, bindings[2]);
+
+        Vector3[] positionArray = new Vector3[_sampleNumber];
+      
+        for (int i = 0; i < _sampleNumber; i++)
+        {
+            time = _timeSample[i];
+            x = xCurve.Evaluate(time);
+            y = yCurve.Evaluate(time);
+            z = zCurve.Evaluate(time);
+            positionArray[i] = new Vector3(x, y, z);
+        }
+
+        if (shouldLog)
+        {
+            string[] content = Array.ConvertAll(positionArray, e => e.ToString("F8"));
+            LogData(_clip.name + name + "_Position", content);
+        }
+
+        return positionArray;
+    }
+
+    private Quaternion[] CreateQuaternionSample(EditorCurveBinding[] bindings, bool shouldLog, string name)
+    {
+        float x = 0;
+        float y = 0;
+        float z = 0;
+        float w = 0;
+        float time = 0;
+        var xCurve = AnimationUtility.GetEditorCurve(_clip, bindings[0]);
+        var yCurve = AnimationUtility.GetEditorCurve(_clip, bindings[1]);
+        var zCurve = AnimationUtility.GetEditorCurve(_clip, bindings[2]);
+        var wCurve = AnimationUtility.GetEditorCurve(_clip, bindings[3]);
+
+        Quaternion[] rotationArray = new Quaternion[_sampleNumber];
+
+        for (int i = 0; i < _sampleNumber; i++)
+        {
+            time = _timeSample[i];
+            x = xCurve.Evaluate(time);
+            y = yCurve.Evaluate(time);
+            z = zCurve.Evaluate(time);
+            w = wCurve.Evaluate(time);
+            rotationArray[i] = new Quaternion(x, y, z, w);
+        }
+
+        if (shouldLog)
+        {
+            string[] content = Array.ConvertAll(rotationArray, e => e.ToString("F8"));
+            LogData(_clip.name + name + "_Rotation", content);
+        }
+
+        return rotationArray;
+    }
+
+    private void Sample(bool shouldLog)
+    {
+        var bindingList = AnimationUtility.GetCurveBindings(_clip);
+        EditorCurveBinding[] posBinding = new EditorCurveBinding[3];
+        EditorCurveBinding[] rotBinding = new EditorCurveBinding[4];
+
+        for (int i = 0; i < bindingList.Length; i++)
+        {
+            if (bindingList[i].propertyName == "RightFootT.x")
+            {
+                Array.Copy(bindingList, i, posBinding, 0, 3);                
+                _rightLegSample = CreateVectorSample(posBinding, shouldLog, "rightLeg");
+            }
+            else if (bindingList[i].propertyName == "LeftFootT.x")
+            {
+                Array.Copy(bindingList, i, posBinding, 0, 3);
+                _leftLegSample = CreateVectorSample(posBinding, shouldLog, "leftLeg");
+            } 
+            else if (bindingList[i].propertyName == "RootQ.x")
+            {
+                Array.Copy(bindingList, i, rotBinding, 0, 4);                                
+                _rootRotationSample = CreateQuaternionSample(rotBinding, shouldLog, "root");
+            } 
+            else if (bindingList[i].propertyName == "RootT.x")
+            {
+                Array.Copy(bindingList, i, posBinding, 0, 3);
+                _rootPositionSample = CreateVectorSample(posBinding, shouldLog, "root");
+            }
+        }
+
+        ConvertFromLocalToWorld();
+        _groundLevel = (_rightLegSample[0].y <= _leftLegSample[0].y) ? _rightLegSample[0].y : _leftLegSample[0].y;
+        _groundLevel *= (1 + thresholdGround);                
+    }
+
+    private void ConvertFromLocalToWorld()
+    {
+        GameObject empty = new GameObject();
+        for (int i = 0; i < _sampleNumber; i++)
+        {
+            _rootPositionSample[i].x = 0;
+            _rootPositionSample[i].z = 0;
+
+            empty.transform.position = _rootPositionSample[i];
+            empty.transform.rotation = _rootRotationSample[i];
+
+            _rightLegSample[i] = empty.transform.TransformPoint(_rightLegSample[i]);            
+            _leftLegSample[i] = empty.transform.TransformPoint(_leftLegSample[i]);
+        }
+
+        string[] content = Array.ConvertAll(_rightLegSample, e => e.ToString("F8").Replace("(", "").Replace(")", ""));        
+        LogData(_clip.name + "convertedRIGHT", content);
     }
 
     private void SampleAnimation(bool shouldLog)
@@ -93,7 +226,7 @@ public class AnimationClipSample
     {
         float duration = curve.keys[curve.length - 1].time;
         float step = duration / _sampleNumber;
-        float start = 0f;        
+        float start = 0f;
         float[] valueArray = new float[_sampleNumber];
         float[] timeArray = new float[_sampleNumber];
 
@@ -102,7 +235,7 @@ public class AnimationClipSample
             float val = curve.Evaluate(start);
             valueArray[i] = val;
             timeArray[i] = start;
-            start += step;            
+            start += step;
         }
 
         if (shouldLog)
@@ -110,25 +243,35 @@ public class AnimationClipSample
 
         return (valueArray, timeArray);
     }
-            
+
+    private (float[] val, float[] times) Sample(AnimationClip clip, AnimationCurve curve, string name, bool shouldLog)
+    {
+        float duration = curve.keys[curve.length - 1].time;
+        float step = duration / _sampleNumber;
+        float start = 0f;
+
+
+        float[] valueArray = new float[_sampleNumber];
+        float[] timeArray = new float[_sampleNumber];
+
+        for (int i = 0; i < _sampleNumber; i++)
+        {
+            float val = curve.Evaluate(start);
+            valueArray[i] = val;
+            timeArray[i] = start;
+            start += step;
+        }
+
+        if (shouldLog)
+            LogData(clip.name + name, Array.ConvertAll(valueArray, e => e.ToString()));
+
+        return (valueArray, timeArray);
+    }
+
     private void LogData(string fileName, string[] content)
     {
         string path = _logPath + fileName + ".txt";
         System.IO.File.WriteAllLines(path, content);
-        /*if (!File.Exists(path))
-        {
-            using (StreamWriter sw = File.CreateText(path))
-            {
-                sw.WriteLine(content);
-            }
-        }
-        else
-        {
-            using (StreamWriter sw = File.AppendText(path))
-            {
-                sw.WriteLine(content);
-            }
-        }*/
     }
 
     public void AnalyzeAnimation(bool shoudLog)
@@ -137,6 +280,7 @@ public class AnimationClipSample
         (int rLiftIndex, float rLiftTime, int rStrikeIndex, float rStrikeTime) rkeyTimes;
 
         SampleAnimation(shoudLog);
+        Sample(shoudLog);
 
         if (_clip.averageSpeed.x > _clip.averageSpeed.z)
         {
@@ -314,11 +458,30 @@ public class AnimationClipSample
     private bool isValley(float a, float b, float c)
     {
         return (a > b) && (c > b);
+    }    
+
+    private (int[] peaks, int[] valleys) GetPeaksAndValleys(Vector3[] legSample)                                       
+    {
+        List<int> peaks = new List<int>();
+        List<int> valleys = new List<int>();
+        float[] axisOfMovement = new float[_sampleNumber];
+        for (int i = 0; i < legSample.Length; i++)
+        {
+            axisOfMovement[i] = ()legSample[i].z;
+        }
+
+        for (int i = 1; i < _sampleNumber - 1; i++)
+        {
+            float a = legSample[i - 1].z;
+            float b = legSample[i].z;
+            float c = legSample[i + 1].z;
+            if (isPeak(a, b, c)) { peaks.Add(i); }
+            if (isValley(a, b, c)) { valleys.Add(i); }
+        }
+
+        return (peaks.ToArray(), valleys.ToArray());
     }
 }
 
-public struct RootInformation
-{
-    Quaternion[] rootRotation;
-    float[] time;
-}
+
+
