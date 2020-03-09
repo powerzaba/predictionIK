@@ -145,6 +145,7 @@ public class AnimationClipSample
         SampleAnimation(shoudLog);
         _sampler.Sample(shoudLog);
 
+        EventManager eventManager = new EventManager(ref _clip, _timeSample);
 
         if (shoudLog)
         {
@@ -157,20 +158,26 @@ public class AnimationClipSample
         var right = GetKeyTimes(_sampler._rightFootPos);
         _groundLevel = curreGL;
 
-        List<Keyframe> ks = new List<Keyframe>();
-        AnimationCurve testCurve;
-        for (int i = 0; i < left.strikeIndexes.Length; i++)
-        {
-            
-            ks.Add(new Keyframe(_timeSample[left.strikeIndexes[i]], 1, 0, 20));            
-        }
-        for (int i = 0; i < left.liftIndexes.Length; i++)
-        {
-            ks.Add(new Keyframe(_timeSample[left.liftIndexes[i]], 1, -20, 0));
-        }
-        testCurve = new AnimationCurve(ks.ToArray());
-        _clip.SetCurve("", typeof(Animator), "PORCODIO", testCurve);
+        eventManager.InsertFeetCurve(left, right);
+        float LF = GetFlightTime(left);
+        float RF = GetFlightTime(right);
+        Vector3 righDis = GetDisplacementVector(right.strikeIndexes, _sampler._rightFootPos);
+        Vector3 leftDis = GetDisplacementVector(right.liftIndexes, _sampler._leftFootPos);
 
+        Debug.Log(_clip.name + " - Left flighttime is: " + LF);
+        Debug.Log(_clip.name + " - Right flighttime is: " + RF);
+        Debug.Log(righDis.ToString("F8"));
+
+        float avFT = LF + RF / 2;
+        string stringRight = righDis.ToString("F8")
+                                    .Replace("(", "")
+                                    .Replace(")", "");
+        string stringLeft = leftDis.ToString("F8")
+                                    .Replace("(", "")
+                                    .Replace(")", "");
+        string disVec = stringRight + stringLeft;
+
+        eventManager.InsertAnimationEvents(disVec, avFT);
         ////////TESTING ABOVE
         ///
 
@@ -209,7 +216,8 @@ public class AnimationClipSample
         Vector2 displacement = rightFootStrikePosition - rootPositionAtRightStrikeTime;
         string dis = rightFootStrikePosition.ToString();
 
-        AnimationUtility.SetAnimationEvents(_clip, CreateEvents(lkeyTimes, rkeyTimes, rightFlightTime, dis));
+        //test
+        //AnimationUtility.SetAnimationEvents(_clip, CreateEvents(lkeyTimes, rkeyTimes, rightFlightTime, dis));
     }
 
     private AnimationEvent[] CreateEvents((int lLiftIndex, float lLiftTime, int lStrikeIndex, float lStrikeTime) lkeyTimes,
@@ -391,7 +399,7 @@ public class AnimationClipSample
         List<int> correctValleys = new List<int>();
         (int[] peaks, int[] valleys) pv;
 
-        pv = GetPeaksAndValleys(leg);
+        pv = GetPeaksAndValleys(leg);        
 
         //TODO: Add proper error conditions for adding a clip to the error list;
         if (pv.peaks.Length <= 0 || pv.valleys.Length <= 0 ||
@@ -426,7 +434,7 @@ public class AnimationClipSample
 
         foreach (int valley in pv.valleys)
         {
-            var currentValley = valley;
+            var currentValley = valley;            
             for (int i = 0; i <= thresholdCheck; i++)
             {
                 if (i == thresholdCheck)
@@ -445,6 +453,41 @@ public class AnimationClipSample
         }
 
         return (correctPeaks.ToArray(), correctValleys.ToArray());
+    }
+
+    private Vector3 GetDisplacementVector(int[] strikeIndexes, LegPositionInformation leg)
+    {        
+        var index = strikeIndexes[0];
+        Vector3 displacementVector = new Vector3(leg.x[index], 0, leg.z[index]);
+
+        return displacementVector;
+    }
+
+    private float GetFlightTime((int[] strikeIndexes, int[] liftIndexes) foot)
+    {
+        float flightTime = 0;
+        float strikeTime = _timeSample[foot.strikeIndexes[0]];
+        float liftTime = _timeSample[foot.liftIndexes[0]];
+        float endTime = _clip.length;
+
+        if (strikeTime < liftTime)
+        {
+            if (foot.strikeIndexes.Length > 1)
+            {
+                strikeTime = _timeSample[foot.strikeIndexes[1]];
+                flightTime = strikeTime - liftTime;
+            } 
+            else
+            {
+                flightTime = endTime - liftTime + strikeTime;
+            }                        
+        } 
+        else
+        {
+            flightTime = strikeTime - liftTime;
+        }
+
+        return flightTime;
     }
 }
 

@@ -66,12 +66,15 @@ public class ClipInfo : EditorWindow
     {
         AnimationEvent[] empty = new AnimationEvent[0];
 
-        LoadClip();
-        foreach (AnimationClip clip in clipList)
+        //LoadClip();
+        if (clipList != null)
         {
-            AnimationUtility.SetAnimationEvents(clip, empty);
+            foreach (AnimationClip clip in clipList)
+            {
+                AnimationUtility.SetAnimationEvents(clip, empty);
+            }
         }
-
+        
         if (errorList != null)
         {
             errorList.Clear();
