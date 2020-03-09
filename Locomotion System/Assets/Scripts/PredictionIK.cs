@@ -59,6 +59,15 @@ public class PredictionIK : MonoBehaviour
 
     void Update()
     {
+        if (animator.GetFloat("PORCODIO") == 1)
+        {
+            //leftFootGrounded = false;
+        } 
+        else
+        {
+            //leftFootGrounded = true;
+        }
+
         currentRightFootPos = animator.GetBoneTransform(HumanBodyBones.RightToes).position;
         currentLeftFootPos = animator.GetBoneTransform(HumanBodyBones.LeftToes).position;
 
@@ -180,7 +189,7 @@ public class PredictionIK : MonoBehaviour
 
     public void LeftFootLift(AnimationEvent evt)
     {
-        if (evt.animatorClipInfo.weight > 0.5)
+        if (evt.animatorClipInfo.weight > 0.5) { }
             leftFootGrounded = false;
     }
     public void RightFootLift(AnimationEvent evt)
@@ -194,7 +203,7 @@ public class PredictionIK : MonoBehaviour
     }
     public void LeftFootStrike(AnimationEvent evt)
     {
-        if (evt.animatorClipInfo.weight > 0.5)
+        if (evt.animatorClipInfo.weight > 0.5) { }
             leftFootGrounded = true;
     }
     public void RightFootStrike(AnimationEvent evt)

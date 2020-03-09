@@ -66,10 +66,10 @@ public class LocomotionController : MonoBehaviour
         float inputX = Input.GetAxis("Horizontal");
         float inputZ = Input.GetAxis("Vertical");
         speed = new Vector2(inputX, inputZ).magnitude;
-        if (speed >= 0)
-        {
-            speed = 0;
-        }
+        //if (speed >= 0)
+        //{
+        //    speed = 0;
+        //}
         
         animator.SetFloat("Speed", speed, dampTime, Time.deltaTime);
         Vector3 moveX = Camera.main.transform.right * inputX;

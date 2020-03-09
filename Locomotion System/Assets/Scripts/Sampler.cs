@@ -7,15 +7,16 @@ class Sampler
 {
     private AnimationClip _clip;
     private int _sampleNumber;
-    private LegPositionInformation _leftFootPos { get; set; }
-    private LegPositionInformation _rightFootPos { get; set; }
-    private RootInformation _rootInfo { get; set; }
+    public LegPositionInformation _leftFootPos { get; set; }
+    public LegPositionInformation _rightFootPos { get; set; }
+    public RootInformation _rootInfo { get; set; }
     private float[] _timeSample;
 
     public Sampler(AnimationClip clip, int sampleNumber)
     {
         _clip = clip;
         _sampleNumber = sampleNumber;
+        _timeSample = new float[sampleNumber];
 
         SampleTime();
     }
@@ -37,10 +38,11 @@ class Sampler
     {
         string path = Directory.GetCurrentDirectory() + @"\Assets\AnimationLogData\"
                                                       + _clip.name;
-        string rightFootPath = path + "_Right_Position";
-        string leftFootPath = path + "_Left_Position";
-        string rootPositionPath = path + "_Root_Position";
-        string rootRotationPath = path + "_Root_ROtation";
+        string rightFootPath = path + "_Right_Position.txt";
+        string leftFootPath = path + "_Left_Position.txt";
+        string rootPositionPath = path + "_Root_Position.txt";
+        string rootRotationPath = path + "_Root_Rotation.txt";
+
         System.IO.File.WriteAllLines(rightFootPath, _rightFootPos.getStringPosition());
         System.IO.File.WriteAllLines(leftFootPath, _leftFootPos.getStringPosition());
         System.IO.File.WriteAllLines(rootPositionPath, _rootInfo.getStringPosition());
@@ -62,7 +64,6 @@ class Sampler
         float x = 0;
         float y = 0;
         float z = 0;
-
 
         for (int i = 0; i < _sampleNumber; i++)
         {
@@ -86,9 +87,9 @@ class Sampler
         rootInfo.position = new Vector3[_sampleNumber];
         rootInfo.rotation = new Quaternion[_sampleNumber];
 
-        var xPosCurve = AnimationUtility.GetEditorCurve(_clip, rotBindings[0]);
-        var yPosCurve = AnimationUtility.GetEditorCurve(_clip, rotBindings[1]);
-        var zPosCurve = AnimationUtility.GetEditorCurve(_clip, rotBindings[2]);
+        var xPosCurve = AnimationUtility.GetEditorCurve(_clip, posBindings[0]);
+        var yPosCurve = AnimationUtility.GetEditorCurve(_clip, posBindings[1]);
+        var zPosCurve = AnimationUtility.GetEditorCurve(_clip, posBindings[2]);
         var xCurve = AnimationUtility.GetEditorCurve(_clip, rotBindings[0]);
         var yCurve = AnimationUtility.GetEditorCurve(_clip, rotBindings[1]);
         var zCurve = AnimationUtility.GetEditorCurve(_clip, rotBindings[2]);
@@ -133,17 +134,15 @@ class Sampler
                 Array.Copy(bindingList, i, posBinding, 0, 3);
                 _leftFootPos = CreatePositionStruct(posBinding);
             }
-            else if (bindingList[i].propertyName == "RootQ.x")
+            else if (bindingList[i].propertyName == "RootT.x")
             {
-                Array.Copy(bindingList, i, rotBinding, 0, 4);
-                Array.Copy(bindingList, i + 4, posBinding, 0, 3);
+                Array.Copy(bindingList, i, posBinding, 0, 3);
+                Array.Copy(bindingList, i + 3, rotBinding, 0, 4);                
                 _rootInfo = CreateRootInfoStruct(posBinding, rotBinding);
             }
         }
 
         ConvertFromLocalToWorld();
-        //_groundLevel = (_rightLegSample[0].y <= _leftLegSample[0].y) ? _rightLegSample[0].y : _leftLegSample[0].y;
-        //_groundLevel *= (1 + thresholdGround);
     }
 
     private void ConvertFromLocalToWorld()
@@ -157,15 +156,14 @@ class Sampler
             empty.transform.position = _rootInfo.position[i];
             empty.transform.rotation = _rootInfo.rotation[i];
 
-            Vector3 rightPos = empty
-                               .transform
-                               .TransformPoint(_rightFootPos.position[i]);
-            Vector3 leftPos = empty
-                               .transform
-                               .TransformPoint(_leftFootPos.position[i]);
+            Vector3 rightPos = empty.transform
+                                    .TransformPoint(_rightFootPos.position[i]);
+            Vector3 leftPos = empty.transform
+                                   .TransformPoint(_leftFootPos.position[i]);
             _rightFootPos.setPosition(rightPos, i);
             _leftFootPos.setPosition(leftPos, i);
         }
+        UnityEngine.Object.DestroyImmediate(empty);
     }
 }
 
