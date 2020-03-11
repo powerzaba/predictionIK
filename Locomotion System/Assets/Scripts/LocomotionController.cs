@@ -45,6 +45,8 @@ public class LocomotionController : MonoBehaviour
 
     #endregion 
 
+
+    public float rotationSpeed = 14f;
     // Start is called before the first frame update
     void Start()
     {
@@ -52,7 +54,7 @@ public class LocomotionController : MonoBehaviour
         animator = GetComponent<Animator>();
         characterController = GetComponent<CharacterController>();
 
-        lastRotation = model.transform.rotation;        
+        lastRotation = transform.rotation;        
     }
 
 
@@ -70,23 +72,28 @@ public class LocomotionController : MonoBehaviour
         //{
         //    speed = 0;
         //}
-        
+        //TODO FIX ANIMATOR STOP CONDITION
+        speed = 0.5f;
         animator.SetFloat("Speed", speed, dampTime, Time.deltaTime);
         Vector3 moveX = Camera.main.transform.right * inputX;
         Vector3 moveZ = Camera.main.transform.forward * inputZ;
         moveDirection = moveX + moveZ;
+        moveDirection = moveDirection.normalized;
         moveDirection.y = 0.0f;
-        
+
+      
         if (moveDirection != Vector3.zero) {
-            Quaternion newRotation = Quaternion.Lerp(lastRotation, Quaternion.LookRotation(moveDirection), 0.1f);
-            model.transform.rotation = newRotation;
+            //Quaternion newRotation = Quaternion.Lerp(lastRotation, Quaternion.LookRotation(moveDirection), 0.1f);
+            //model.transform.rotation = newRotation;
             //model.transform.rotation = Quaternion.Lerp(model.transform.rotation, Quaternion.LookRotation(moveDirection), 14);            
+            var singleStep = rotationSpeed * Time.deltaTime;
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(moveDirection), singleStep);
         }
 
         fallVector.y -= gravity * Time.deltaTime;
         characterController.Move(fallVector * Time.deltaTime);
 
-        lastRotation = model.transform.rotation;
+        lastRotation = transform.rotation;
     }
    
     #region FeetGrounding

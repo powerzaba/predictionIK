@@ -11,8 +11,10 @@ public class ClipInfo : EditorWindow
     private List<AnimationClip> nonHumanoidList;
     private int sampleNumber = 100;
     private float treshold = 0.1f;
-
+    private float ground = 0.01f;
     private bool shouldLog = false;
+
+    public static AnimationClip _idle;
 
     [MenuItem("Window/Clip Info")]
     static void Init()
@@ -25,7 +27,10 @@ public class ClipInfo : EditorWindow
         EditorGUILayout.LabelField("Sample Number");
         sampleNumber = EditorGUILayout.IntField(sampleNumber);
 
-        EditorGUILayout.LabelField("Treshold Value");
+        EditorGUILayout.LabelField("Ground Treshold");
+        ground = EditorGUILayout.FloatField(ground);
+
+        EditorGUILayout.LabelField("Time Treshold");
         treshold = EditorGUILayout.FloatField(treshold);
 
         EditorGUILayout.LabelField("Idle Animation");
@@ -66,7 +71,6 @@ public class ClipInfo : EditorWindow
     {
         AnimationEvent[] empty = new AnimationEvent[0];
 
-        //LoadClip();
         if (clipList != null)
         {
             foreach (AnimationClip clip in clipList)
@@ -89,7 +93,7 @@ public class ClipInfo : EditorWindow
     private void AnalyzeMotion()
     {
         LoadClip();
-        Ann();
+        Analyze();
     }
 
     private void LoadClip()
@@ -99,22 +103,25 @@ public class ClipInfo : EditorWindow
         Array.Copy(list, clipList, list.Length);
     }
 
-    private void Ann()
-    {
+    private void Analyze()
+    {       
         foreach (AnimationClip clip in clipList)
         {
             if (clip.name == idleClip.name)
             {
+                //ADD RELATIVE POSITION FOR IDLE ANIMATION
+                //ADD FLIGHT TIME AS WELL LOL
+                _idle = clip;
                 continue;
             }
 
             if (!clip.humanMotion)
-            {
+            {                
                 nonHumanoidList.Add(clip);
                 continue;
             }
 
-            AnimationClipSample animationSample = new AnimationClipSample(clip, sampleNumber, ref errorList);
+            var animationSample = new AnimationAnalyzer(clip, sampleNumber, ref errorList, ground, treshold);
             animationSample.AnalyzeAnimation(shouldLog);
         }
     }

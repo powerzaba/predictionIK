@@ -59,15 +59,6 @@ public class PredictionIK : MonoBehaviour
 
     void Update()
     {
-        if (animator.GetFloat("PORCODIO") == 1)
-        {
-            //leftFootGrounded = false;
-        } 
-        else
-        {
-            //leftFootGrounded = true;
-        }
-
         currentRightFootPos = animator.GetBoneTransform(HumanBodyBones.RightToes).position;
         currentLeftFootPos = animator.GetBoneTransform(HumanBodyBones.LeftToes).position;
 
@@ -112,7 +103,8 @@ public class PredictionIK : MonoBehaviour
     {
         float currentFlightTime = GetCurrentFlightTime();
         //TODO just for right at the moment;
-        Vector3 disRootToRight = new Vector3(0.054771f, -0.41804f, 0.7325f);
+        //0.18560470, 0.00000000, 0.35282970
+        Vector3 disRootToRight = new Vector3(0.18560470f, 0f, 0.35282970f);
         Vector3 disRootToLeft = new Vector3(-0.021762f, 0f, -0.091565f);
 
         Vector3 _currentVelocity = GetCurrentVelocity();
@@ -125,11 +117,12 @@ public class PredictionIK : MonoBehaviour
         _currentVelocity = locomotionScript.lastRotation * _currentVelocity;
 
         Matrix4x4 test = Matrix4x4.TRS(currentRootPos, currentRootRot, Vector3.one);
-        disRootToRight = test.MultiplyVector(disRootToRight);
+        //disRootToRight = test.MultiplyVector(disRootToRight);
 
         //disRootToRight = locomotionScript.lastRotation * disRootToRight;
         //disRootToRight = currentRootRot * disRootToRight;
         disRootToLeft = locomotionScript.lastRotation * disRootToLeft;
+        disRootToRight = locomotionScript.lastRotation * disRootToRight;
 
 
         currentVelocity = _currentVelocity;
@@ -137,7 +130,7 @@ public class PredictionIK : MonoBehaviour
         predictedRootPos = currentRootPos + (_currentVelocity * (nextFootprintTime - currentTime));
         //predictedRootPos.y = 0f;
         predictedRightFootPosition = predictedRootPos + disRootToRight;
-        predictedLeftFootPosition = predictedRootPos + disRootToLeft;
+        //predictedLeftFootPosition = predictedRootPos + disRootToLeft;
 
         
         //predictedCharacterPosition = prevPos + currentDirection;        
@@ -219,7 +212,7 @@ public class PredictionIK : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        Gizmos.color = Color.red;
+        /*Gizmos.color = Color.red;
         Gizmos.DrawSphere(prevLeftFootPos, 0.1f);        
 
         Gizmos.color = Color.blue;                
@@ -234,13 +227,13 @@ public class PredictionIK : MonoBehaviour
         
         
         Gizmos.color = Color.green;
-        Gizmos.DrawCube(predictedRightFootPosition, new Vector3(0.1f, 0.1f, 0.1f));
+        Gizmos.DrawCube(predictedRightFootPosition, new Vector3(0.1f, 0.1f, 0.1f));*/
         //Gizmos.DrawCube(predictedLeftFootPosition, new Vector3(0.1f, 0.1f, 0.1f));
 
-        Gizmos.color = Color.green;
+        /*Gizmos.color = Color.green;
         Vector3 test = direction;
         test.y = 0;
-        Gizmos.DrawLine(prevRightFootPos, prevRightFootPos + direction * 1.1f);
+        Gizmos.DrawLine(prevRightFootPos, prevRightFootPos + direction * 1.1f);*/
 
         /*Matrix4x4 cubeTransform = Matrix4x4.TRS(currentRootPos, currentRootRot, Vector3.one);
         Matrix4x4 old = Gizmos.matrix;
@@ -252,8 +245,8 @@ public class PredictionIK : MonoBehaviour
         Gizmos.matrix = old;*/
 
         //TODO: testing vector rotation for centre of mass
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawCube(currentRootPos, new Vector3(0.1f, 0.1f, 0.1f));
+        /*Gizmos.color = Color.yellow;
+        Gizmos.DrawCube(currentRootPos, new Vector3(0.1f, 0.1f, 0.1f));*/
     }
 
     private float GetCurrentFlightTime()

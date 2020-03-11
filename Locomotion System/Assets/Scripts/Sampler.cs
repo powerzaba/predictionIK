@@ -7,10 +7,10 @@ class Sampler
 {
     private AnimationClip _clip;
     private int _sampleNumber;
-    public LegPositionInformation _leftFootPos { get; set; }
-    public LegPositionInformation _rightFootPos { get; set; }
-    public RootInformation _rootInfo { get; set; }
-    private float[] _timeSample;
+    public LegPositionInformation _leftFootPos { get; private set; }
+    public LegPositionInformation _rightFootPos { get; private set; }
+    public RootInformation _rootInfo { get; private set; }
+    public float[] _timeSample { get; private set; }
 
     public Sampler(AnimationClip clip, int sampleNumber)
     {

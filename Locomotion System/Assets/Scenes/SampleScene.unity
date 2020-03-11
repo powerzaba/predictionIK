@@ -910,7 +910,6 @@ GameObject:
   - component: {fileID: 791146294}
   - component: {fileID: 791146293}
   - component: {fileID: 791146292}
-  - component: {fileID: 791146296}
   m_Layer: 0
   m_Name: Sphere
   m_TagString: Untagged
@@ -992,20 +991,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &791146296
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 791146291}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 28a70472dbdab499abd480dec4db5c45, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  lookAtPoint: {x: 0, y: 0, z: 0}
-  Char: {fileID: 8742008233458948250}
 --- !u!1 &835450412
 GameObject:
   m_ObjectHideFlags: 0
@@ -1205,7 +1190,7 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 7073671918765656795}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1221400839
+--- !u!114 &1221400836
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1213,6 +1198,18 @@ MonoBehaviour:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1221400834}
   m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8263922753931ef4282b63662d455e7f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1221400839
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1221400834}
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1db1ee58e7f8547448b9f9016e6fe8a7, type: 3}
   m_Name: 
@@ -2273,11 +2270,15 @@ PrefabInstance:
       propertyPath: pelvisOffset
       value: 1.2
       objectReference: {fileID: 0}
+    - target: {fileID: 7073671917522672504, guid: 9f0aa16bd88ae46a1a19f9a4a4528954,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7073671917522672504, guid: 9f0aa16bd88ae46a1a19f9a4a4528954,
+        type: 3}
+      propertyPath: rotationSpeed
+      value: 14
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9f0aa16bd88ae46a1a19f9a4a4528954, type: 3}
---- !u!1 &8742008233458948250 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1980283156828426817, guid: 9f0aa16bd88ae46a1a19f9a4a4528954,
-    type: 3}
-  m_PrefabInstance: {fileID: 7073671918765656795}
-  m_PrefabAsset: {fileID: 0}

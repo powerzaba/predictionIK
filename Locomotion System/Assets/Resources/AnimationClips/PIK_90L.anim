@@ -41381,88 +41381,6 @@ AnimationClip:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 1
-        inSlope: 0
-        outSlope: 10
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 0.49700013
-        value: 1
-        inSlope: 10
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 0.56800014
-        value: 1
-        inSlope: 0
-        outSlope: 10
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 1.0650003
-        value: 1
-        inSlope: 10
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 1.1833334
-        value: 1
-        inSlope: 0
-        outSlope: 10
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 1.6566658
-        value: 1
-        inSlope: 10
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 1.7749989
-        value: 1
-        inSlope: 0
-        outSlope: 10
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 2.271998
-        value: 1
-        inSlope: 10
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    attribute: leftFootCurve
-    path: 
-    classID: 4
-    script: {fileID: 0}
-  - curve:
-      serializedVersion: 2
-      m_Curve:
-      - serializedVersion: 3
-        time: 0
         value: 0
         inSlope: 0
         outSlope: 1
@@ -41626,10 +41544,19 @@ AnimationClip:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0.023666669
+        time: 0
         value: 1
         inSlope: -20
         outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 20
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
@@ -41637,17 +41564,17 @@ AnimationClip:
       - serializedVersion: 3
         time: 0.49700013
         value: 1
-        inSlope: 0
-        outSlope: 20
+        inSlope: -20
+        outSlope: 0
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
         outWeight: 0
       - serializedVersion: 3
-        time: 0.6153335
+        time: 0.56800014
         value: 1
-        inSlope: -20
-        outSlope: 0
+        inSlope: 0
+        outSlope: 20
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
@@ -41655,17 +41582,17 @@ AnimationClip:
       - serializedVersion: 3
         time: 1.0650003
         value: 1
-        inSlope: 0
-        outSlope: 20
+        inSlope: -20
+        outSlope: 0
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
         outWeight: 0
       - serializedVersion: 3
-        time: 1.207
+        time: 1.1833334
         value: 1
-        inSlope: -20
-        outSlope: 0
+        inSlope: 0
+        outSlope: 20
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
@@ -41673,6 +41600,15 @@ AnimationClip:
       - serializedVersion: 3
         time: 1.6566658
         value: 1
+        inSlope: -20
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.7749989
+        value: 1
         inSlope: 0
         outSlope: 20
         tangentMode: 0
@@ -41680,7 +41616,7 @@ AnimationClip:
         inWeight: 0
         outWeight: 0
       - serializedVersion: 3
-        time: 1.7986655
+        time: 2.271998
         value: 1
         inSlope: -20
         outSlope: 0
@@ -41689,7 +41625,7 @@ AnimationClip:
         inWeight: 0
         outWeight: 0
       - serializedVersion: 3
-        time: 2.271998
+        time: 2.3666668
         value: 1
         inSlope: 0
         outSlope: 20
@@ -41700,7 +41636,107 @@ AnimationClip:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    attribute: PORCODIO
+    attribute: LeftFootCurve
+    path: 
+    classID: 95
+    script: {fileID: 0}
+  - curve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1.5
+        inSlope: 0
+        outSlope: 20
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.213
+        value: 1
+        inSlope: -20
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.3076667
+        value: 1
+        inSlope: 0
+        outSlope: 20
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.80466694
+        value: 1
+        inSlope: -20
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.875667
+        value: 1
+        inSlope: 0
+        outSlope: 20
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.3726664
+        value: 1
+        inSlope: -20
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.4673328
+        value: 1
+        inSlope: 0
+        outSlope: 20
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.9643319
+        value: 1
+        inSlope: -20
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 2.0589983
+        value: 1
+        inSlope: 0
+        outSlope: 20
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 2.3666668
+        value: 1.5
+        inSlope: -20
+        outSlope: 20
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    attribute: RightFootCurve
     path: 
     classID: 95
     script: {fileID: 0}
@@ -41735,7 +41771,14 @@ AnimationClip:
       isPPtrCurve: 0
     - serializedVersion: 2
       path: 0
-      attribute: 2943248224
+      attribute: 3322229436
+      script: {fileID: 0}
+      typeID: 95
+      customType: 0
+      isPPtrCurve: 0
+    - serializedVersion: 2
+      path: 0
+      attribute: 3467857846
       script: {fileID: 0}
       typeID: 95
       customType: 0
@@ -42670,30 +42713,9 @@ AnimationClip:
   m_HasMotionFloatCurves: 0
   m_Events:
   - time: 0
-    functionName: LeftFootLift
-    data: (0.1, 0.0)
+    functionName: 
+    data: 0.00086106, 0.00000000, 0.03812052#-0.06771117, 0.00000000, 0.09822571
     objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
-    intParameter: 0
-    messageOptions: 0
-  - time: 0
-    functionName: LeftFootStrike
-    data: L_strike
-    objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
-    intParameter: 0
-    messageOptions: 0
-  - time: 0
-    functionName: RightFootLift
-    data: R_lift
-    objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
-    intParameter: 0
-    messageOptions: 0
-  - time: 0
-    functionName: RightFootStrike
-    data: R_strike
-    objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
+    floatParameter: 0.4970002
     intParameter: 0
     messageOptions: 0

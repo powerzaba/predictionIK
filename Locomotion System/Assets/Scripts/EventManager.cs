@@ -63,6 +63,7 @@ public class EventManager
             time = 0,
             stringParameter = displacementVector,
             floatParameter = flightTime
+            
         };
 
         AnimationUtility.SetAnimationEvents(_clip, evt);
