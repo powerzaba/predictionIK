@@ -63,6 +63,9 @@ public class FeetManager : MonoBehaviour
 
         Gizmos.color = Color.blue;
         //Gizmos.DrawSphere(_predictor.predictedRootPositionLeft, 0.1f);
+        Gizmos.DrawSphere(_predictor.rightShadowPosition, 0.1f);
+
+        
 
         Gizmos.color = Color.green;
         Vector3 test = _predictor.predictedRightFootPosition;

@@ -19,7 +19,7 @@ public static class StateManager
     public static Vector3 currentRightDis = Vector3.zero;
     public static Vector3 currentLeftDis = Vector3.zero;
     public static Vector3 currentVelocity = Vector3.zero;
-
+    
     public static void UpdateState(Animator animator, CharacterController ch)
     {
         UpdateFeetStatus(animator);

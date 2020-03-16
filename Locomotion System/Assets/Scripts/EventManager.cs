@@ -36,8 +36,10 @@ public class EventManager
 
         if (_timeSample[foot.strikeIndexes[0]] <= _timeSample[foot.liftIndexes[0]])
         {
+
             footKeys.Add(new Keyframe(0, 1.5f, 0, 20));
             footKeys.Add(new Keyframe(_clip.length, 1.5f, -20, 20));
+
         }
         else
         {
@@ -85,6 +87,11 @@ public class EventManager
             _clip.SetCurve("", typeof(Animator), "LeftFootCurve", null);
             _clip.SetCurve("", typeof(Animator), "RightFootCurve", null);
         }       
+    }
+
+    public void StoreData(AnimationData data)
+    {
+
     }
 }
 

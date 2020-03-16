@@ -122,7 +122,7 @@ public class ClipInfo : EditorWindow
             }
 
             var animationSample = new AnimationAnalyzer(clip, sampleNumber, ref errorList, ground, treshold);
-            animationSample.AnalyzeAnimation(shouldLog);
+            animationSample.AnalyzeAnimation(shouldLog);            
         }
     }
 }

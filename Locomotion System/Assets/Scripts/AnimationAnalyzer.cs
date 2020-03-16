@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using System;
 using UnityEngine;
 
 public class AnimationAnalyzer
@@ -161,10 +161,10 @@ public class AnimationAnalyzer
 
     private float GetFlightTime((int[] strikeIndexes, int[] liftIndexes) foot)
     {
-        float flightTime = 0;
-        float strikeTime = _timeSample[foot.strikeIndexes[0]];          
+        float strikeTime = _timeSample[foot.strikeIndexes[0]];
         float liftTime = _timeSample[foot.liftIndexes[0]];
         float endTime = _clip.length;
+        float flightTime;
 
         if (strikeTime < liftTime)
         {
@@ -182,9 +182,18 @@ public class AnimationAnalyzer
         {
             flightTime = strikeTime - liftTime;
         }
+
         return flightTime;
     }
 }
 
+public struct AnimationData
+{
+    string clipName;
+    string rightFlightTime;
+    string leftFlightTime;
+    string rightDisplacement;
+    string leftDisplacement;    
+}
 
 
