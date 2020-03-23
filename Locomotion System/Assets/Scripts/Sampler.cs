@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -7,10 +8,11 @@ class Sampler
 {
     private AnimationClip _clip;
     private int _sampleNumber;
-    public LegPositionInformation _leftFootPos { get; private set; }
-    public LegPositionInformation _rightFootPos { get; private set; }
+    public FootPositionInfo _leftFootPos { get; private set; }
+    public FootPositionInfo _rightFootPos { get; private set; }
     public RootInformation _rootInfo { get; private set; }
     public float[] _timeSample { get; private set; }
+    public float _deltaTime { get; private set; }
 
     public Sampler(AnimationClip clip, int sampleNumber)
     {
@@ -32,6 +34,8 @@ class Sampler
             _timeSample[i] = currentTime;
             currentTime += step;
         }
+
+        _deltaTime = step;
     }
 
     public void LogData()
@@ -42,16 +46,18 @@ class Sampler
         string leftFootPath = path + "_Left_Position.txt";
         string rootPositionPath = path + "_Root_Position.txt";
         string rootRotationPath = path + "_Root_Rotation.txt";
-
+        string timePath = path + "_Time.txt";
+        
         System.IO.File.WriteAllLines(rightFootPath, _rightFootPos.getStringPosition());
         System.IO.File.WriteAllLines(leftFootPath, _leftFootPos.getStringPosition());
         System.IO.File.WriteAllLines(rootPositionPath, _rootInfo.getStringPosition());
         System.IO.File.WriteAllLines(rootRotationPath, _rootInfo.getStringRotation());
+        System.IO.File.WriteAllLines(timePath, Array.ConvertAll(_timeSample, e => e.ToString("F8")));
     }
 
-    private LegPositionInformation CreatePositionStruct(EditorCurveBinding[] bindings)
+    private FootPositionInfo CreatePositionStruct(EditorCurveBinding[] bindings)
     {
-        LegPositionInformation posInfo = new LegPositionInformation();
+        FootPositionInfo posInfo = new FootPositionInfo();
         posInfo.position = new Vector3[_sampleNumber];
         posInfo.x = new float[_sampleNumber];
         posInfo.y = new float[_sampleNumber];
@@ -110,13 +116,12 @@ class Sampler
             q_w = wCurve.Evaluate(time);
             rootInfo.rotation[i] = new Quaternion(q_x, q_y, q_z, q_w);
             rootInfo.position[i] = new Vector3(x, y, z);
-
         }
 
         return rootInfo;
     }
 
-    public void Sample(bool shouldLog)
+    public void Sample()
     {
         var bindingList = AnimationUtility.GetCurveBindings(_clip);
         EditorCurveBinding[] posBinding = new EditorCurveBinding[3];
@@ -139,19 +144,21 @@ class Sampler
                 Array.Copy(bindingList, i, posBinding, 0, 3);
                 Array.Copy(bindingList, i + 3, rotBinding, 0, 4);                
                 _rootInfo = CreateRootInfoStruct(posBinding, rotBinding);
-            }
+            }          
         }
 
         ConvertFromLocalToWorld();
+        LogData();
     }
 
+    //TODO: ADD THE MATH
     private void ConvertFromLocalToWorld()
     {
         GameObject empty = new GameObject();
         for (int i = 0; i < _sampleNumber; i++)
         {
-            _rootInfo.position[i].x = 0;
-            _rootInfo.position[i].z = 0;
+            //_rootInfo.position[i].x = 0;
+            //_rootInfo.position[i].z = 0;
 
             empty.transform.position = _rootInfo.position[i];
             empty.transform.rotation = _rootInfo.rotation[i];
@@ -188,7 +195,7 @@ public struct RootInformation
     }
 }
 
-public struct LegPositionInformation
+public struct FootPositionInfo
 {
     public float[] x;
     public float[] y;

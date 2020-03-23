@@ -1,81 +1,115 @@
 ﻿using System.Collections.Generic;
-using System;
+
 using UnityEngine;
 
 public class AnimationAnalyzer
 {
     private AnimationClip _clip;
-    private List<AnimationClip> _errorList;
     private int _sampleNumber;
-    private float _groundLevel;
     private float[] _timeSample;
     private Sampler _sampler;
     private EventManager _eventManager;
 
-    //TODO set threshold values for ground level from the editor
-    private float _thresholdGround = 0.01f;
-    private int _thresholdCheck = 5;
-
-
-    public AnimationAnalyzer(AnimationClip clip, int sampleNumber, ref List<AnimationClip> errorList, 
-                             float groundTh, float timeTh)
+    public AnimationAnalyzer(AnimationClip clip, int sampleNumber)
     {
         _clip = clip;
         _sampleNumber = sampleNumber;
-        _errorList = errorList;
         _sampler = new Sampler(_clip, _sampleNumber);
         _timeSample = _sampler._timeSample;
-        _eventManager = new EventManager(ref _clip, _timeSample);
-        _thresholdCheck = (int) Mathf.Floor(_sampleNumber * timeTh);
-        _thresholdGround = groundTh;
-        _groundLevel = 0 + _thresholdGround;
+        _eventManager = new EventManager(_clip, _timeSample);
     }
 
-    public void AnalyzeAnimation(bool shouldLog)
+    public void AnalyzeAnimation(float velocityTh, int smoothingTh)
     {
-        _sampler.Sample(shouldLog);
- 
+        _sampler.Sample();
 
-        if (shouldLog)
-            _sampler.LogData();
+        var rightGroundTimes = FindGroundTimes(_sampler._rightFootPos.position, velocityTh);
+        var leftGroundTimes = FindGroundTimes(_sampler._leftFootPos.position, velocityTh);
 
-        var leftKeyTimes = GetKeyTimes(_sampler._leftFootPos);
-        var rightKeyTimes = GetKeyTimes(_sampler._rightFootPos);
+        _eventManager.InsertFeetCurve(rightGroundTimes, leftGroundTimes);
+
+        /*var leftKeyTimes = GetKeyTimes(_sampler._leftFootPos, groundTh, velocityTh);
+        Debug.Log("IT'S RIGHT");
+        var rightKeyTimes = GetKeyTimes(_sampler._rightFootPos, groundTh, velocityTh);
 
         _eventManager.InsertFeetCurve(leftKeyTimes, rightKeyTimes);
 
         float leftFlightTime = GetFlightTime(leftKeyTimes);
         float rightFlightTime = GetFlightTime(rightKeyTimes);
-        float averageFlightTime = (leftFlightTime + rightFlightTime) / 2;
 
-        Vector3 rightDis = GetDisplacementVector(rightKeyTimes.strikeIndexes, _sampler._rightFootPos);
-        Vector3 leftDis = GetDisplacementVector(leftKeyTimes.strikeIndexes, _sampler._leftFootPos);
+        string rightDis = GetDisplacementVector(rightKeyTimes.strikeIndexes, _sampler._rightFootPos);
+        string leftDis = GetDisplacementVector(leftKeyTimes.strikeIndexes, _sampler._leftFootPos);
 
-        string stringRight = rightDis.ToString("F8")
-                                     .Replace("(", "")
-                                     .Replace(")", "");
+        AnimationData data = new AnimationData
+        {
+            clipName = _clip.name,
+            rightFlightTime = rightFlightTime.ToString(),
+            leftFlightTime = leftFlightTime.ToString(),
+            rightDisplacement = rightDis,
+            leftDisplacement = leftDis,
+        };
 
-        string stringLeft = leftDis.ToString("F8")
-                                   .Replace("(", "")
-                                   .Replace(")", "");
-
-        string disVec = stringRight + "#" + stringLeft;
-        _eventManager.InsertAnimationEvents(disVec, averageFlightTime);
-    }   
-
-    public void RemoveEvents()
-    {
-        _eventManager.RemoveCurves();
-        _eventManager.RemoveEvents();
+        return data;*/
     }
 
-    private (int[] peaks, int[] valleys) GetPeaksAndValleys(LegPositionInformation leg)
+    private int[] FindGroundTimes(Vector3[] position, float velocityTh)
+    {
+        var groundedTimes = new int[_sampleNumber];
+        var velocity = new float[_sampleNumber];
+        var distances = new float[_sampleNumber];        
+        var prevPosition = Vector3.zero;
+        var currPosition = Vector3.zero;
+        var deltaTime = _sampler._deltaTime;
+
+        for (int i = 0; i < _sampleNumber; i++)
+        {
+            prevPosition = (i == 0) ? position[_sampleNumber - 1] : position[i - 1];          
+            currPosition = position[i];
+
+            distances[i] = Vector3.Distance(prevPosition, currPosition);
+            velocity[i] = distances[i] / deltaTime;
+            groundedTimes[i] = (velocity[i] <= velocityTh) ? 1 : 0;
+        }
+
+        var correctedTimes = new int[_sampleNumber];
+        correctedTimes = SmoothGroundTimes(groundedTimes);
+
+        return correctedTimes;
+    }
+
+    private int[] SmoothGroundTimes(int[] groundedTimes)
+    {
+        var correctedTimes = groundedTimes;        
+
+        for (int i = 0; i < groundedTimes.Length; i++)
+        {
+            var a = groundedTimes[i];
+            var b = groundedTimes[(int)AnimationAnalyzer.Mod((i - 1), _sampleNumber)];
+            var c = groundedTimes[(int)AnimationAnalyzer.Mod((i + 1), _sampleNumber)];
+            if (a != b && a != c)
+            {
+                correctedTimes[i] = c;
+            }
+        }
+
+        return correctedTimes;
+    }
+
+    public static float Mod(float a, float b)
+    {
+        float c = a % b;
+        if ((c < 0 && b > 0) || (c > 0 && b < 0))
+        {
+            c += b;
+        }
+        return c;
+    }
+
+    private (int[] peaks, int[] valleys) GetPeaksAndValleys(FootPositionInfo leg)
     {
         List<int> peaks = new List<int>();
         List<int> valleys = new List<int>();
-        float[] axisOfMovement;
-
-        axisOfMovement = (_clip.averageSpeed.x > _clip.averageSpeed.z) ? leg.x : leg.z;
+        float[] axisOfMovement = (_clip.averageSpeed.x > _clip.averageSpeed.z) ? leg.x : leg.z;
 
         for (int i = 1; i < _sampleNumber - 1; i++)
         {
@@ -89,36 +123,37 @@ public class AnimationAnalyzer
         return (peaks.ToArray(), valleys.ToArray());
     }
 
-    private (int[] strikeIndexes, int[] liftIndexes) GetKeyTimes(LegPositionInformation leg)
+    private (int[] strikeIndexes, int[] liftIndexes) GetKeyTimes(FootPositionInfo leg, float gTh, float tTh)
     {
         List<int> correctPeaks = new List<int>();
         List<int> correctValleys = new List<int>();
         (int[] peaks, int[] valleys) pv;
-
         pv = GetPeaksAndValleys(leg);
 
-        //TODO: Add proper error conditions for adding a clip to the error list;
+        float groundTh = 0 + gTh;
+        float timeTh = (int)Mathf.Floor(_sampleNumber * tTh);
+
         if (pv.peaks.Length <= 0 || pv.valleys.Length <= 0 ||
            (pv.peaks.Length != pv.valleys.Length))
         {
-            if (_errorList != null)
-            {
-                _errorList.Add(_clip);
-            }
-            return (correctPeaks.ToArray(), correctValleys.ToArray());
+            Debug.Log(_clip.name);
+            Debug.Log(pv.peaks.Length);
+            Debug.Log(pv.valleys.Length);
+
+            //return (correctPeaks.ToArray(), correctValleys.ToArray());
         }
 
         foreach (int peak in pv.peaks)
         {
             var currentPeak = peak;
-            for (int i = 0; i <= _thresholdCheck; i++)
+            for (int i = 0; i <= timeTh; i++)
             {
-                if (i == _thresholdCheck)
+                if (i == timeTh)
                 {
                     correctPeaks.Add(currentPeak);
                     break;
                 }
-                if (leg.y[currentPeak] <= _groundLevel)
+                if (leg.y[currentPeak] <= groundTh)
                 {
                     correctPeaks.Add(currentPeak);
                     break;
@@ -131,14 +166,14 @@ public class AnimationAnalyzer
         foreach (int valley in pv.valleys)
         {
             var currentValley = valley;
-            for (int i = 0; i <= _thresholdCheck; i++)
+            for (int i = 0; i <= timeTh; i++)
             {
-                if (i == _thresholdCheck)
+                if (i == timeTh)
                 {
                     correctValleys.Add(currentValley);
                     break;
                 }
-                if (leg.y[currentValley] <= _groundLevel)
+                if (leg.y[currentValley] <= groundTh)
                 {
                     correctValleys.Add(currentValley);
                     break;
@@ -151,12 +186,12 @@ public class AnimationAnalyzer
         return (correctPeaks.ToArray(), correctValleys.ToArray());
     }
 
-    private Vector3 GetDisplacementVector(int[] strikeIndexes, LegPositionInformation leg)
+    private string GetDisplacementVector(int[] strikeIndexes, FootPositionInfo leg)
     {
         var index = strikeIndexes[0];
         Vector3 displacementVector = new Vector3(leg.x[index], 0, leg.z[index]);
 
-        return displacementVector;
+        return displacementVector.ToString("F8").Replace("(", "").Replace(")", "");
     }
 
     private float GetFlightTime((int[] strikeIndexes, int[] liftIndexes) foot)
@@ -189,11 +224,11 @@ public class AnimationAnalyzer
 
 public struct AnimationData
 {
-    string clipName;
-    string rightFlightTime;
-    string leftFlightTime;
-    string rightDisplacement;
-    string leftDisplacement;    
+    public string clipName;
+    public string rightFlightTime;
+    public string leftFlightTime;
+    public string rightDisplacement;
+    public string leftDisplacement;
 }
 
 

@@ -7,20 +7,35 @@ public class EventManager
     private float[] _timeSample;
     private AnimationClip _clip;
 
-    public EventManager(ref AnimationClip clip, float[] time)
+    public EventManager(AnimationClip clip, float[] time)
     {
         _timeSample = time;
         _clip = clip;
     }
 
-    public void InsertFeetCurve((int[] strikeIndex, int[] liftIndex) leftKeyIndexes,
+    /*public void InsertFeetCurve((int[] strikeIndex, int[] liftIndex) leftKeyIndexes,
                                 (int[] strikeIndex, int[] liftIndex) rightKeyIndexes)
     {
         AnimationCurve leftFootCurve;
         AnimationCurve rightFootCurve;
 
-        List<Keyframe> leftKeys = GenerateKeyFrmes(leftKeyIndexes);
-        List<Keyframe> rightKeys = GenerateKeyFrmes(rightKeyIndexes);
+        //List<Keyframe> leftKeys = GenerateKeyFrmes(leftKeyIndexes);
+        //List<Keyframe> rightKeys = GenerateKeyFrmes(rightKeyIndexes);
+
+        //leftFootCurve = new AnimationCurve(leftKeys.ToArray());
+        //rightFootCurve = new AnimationCurve(rightKeys.ToArray());
+
+        //_clip.SetCurve("", typeof(Animator), "LeftFootCurve", leftFootCurve);
+        //_clip.SetCurve("", typeof(Animator), "RightFootCurve", rightFootCurve);
+    }*/
+
+    public void InsertFeetCurve(int[] rightGroundedData, int[] leftGroundedData)
+    {
+        AnimationCurve leftFootCurve;
+        AnimationCurve rightFootCurve;
+
+        List<Keyframe> leftKeys = GenerateKeyFrames(leftGroundedData);
+        List<Keyframe> rightKeys = GenerateKeyFrames(rightGroundedData);
 
         leftFootCurve = new AnimationCurve(leftKeys.ToArray());
         rightFootCurve = new AnimationCurve(rightKeys.ToArray());
@@ -29,7 +44,36 @@ public class EventManager
         _clip.SetCurve("", typeof(Animator), "RightFootCurve", rightFootCurve);
     }
 
-    private List<Keyframe> GenerateKeyFrmes((int[] strikeIndexes, int[] liftIndexes) foot)
+    private List<Keyframe> GenerateKeyFrames(int[] groundedData)
+    {
+        List<Keyframe> footKeys = new List<Keyframe>();
+        bool idle = true;
+        
+        for (int i = 1; i < groundedData.Length; i ++)
+        {
+            if (groundedData[i] != groundedData[i - 1])
+            {
+                idle = false;
+                if (groundedData[i] == 1)
+                {
+                    footKeys.Add(new Keyframe(_timeSample[i], 0, Mathf.Infinity, Mathf.Infinity));
+                    footKeys.Add(new Keyframe(_timeSample[i] + 0.001f, 1, Mathf.Infinity, Mathf.Infinity));
+                }
+                else
+                {
+                    footKeys.Add(new Keyframe(_timeSample[i], 1, Mathf.Infinity, Mathf.Infinity));
+                    footKeys.Add(new Keyframe(_timeSample[i] + 0.001f, 0, Mathf.Infinity, Mathf.Infinity));
+                }
+            }
+        }
+
+        if (idle)
+            footKeys.Add(new Keyframe(0, 1, Mathf.Infinity, Mathf.Infinity));
+
+        return footKeys;
+    }   
+
+    /*private List<Keyframe> GenerateKeyFrmes((int[] strikeIndexes, int[] liftIndexes) foot)
     {
         List<Keyframe> footKeys = new List<Keyframe>();
         var len = foot.strikeIndexes.Length;
@@ -54,7 +98,7 @@ public class EventManager
         }
 
         return footKeys;
-    }
+    }*/
 
     public void InsertAnimationEvents(string displacementVector, float flightTime)
     {
@@ -69,29 +113,6 @@ public class EventManager
         };
 
         AnimationUtility.SetAnimationEvents(_clip, evt);
-    }
-
-    public void RemoveEvents()
-    {
-        if (_clip != null)
-        {
-            AnimationEvent[] empty = new AnimationEvent[1];
-            AnimationUtility.SetAnimationEvents(_clip, empty);
-        }
-    }
-
-    public void RemoveCurves()
-    {
-        if (_clip != null)
-        {
-            _clip.SetCurve("", typeof(Animator), "LeftFootCurve", null);
-            _clip.SetCurve("", typeof(Animator), "RightFootCurve", null);
-        }       
-    }
-
-    public void StoreData(AnimationData data)
-    {
-
     }
 }
 

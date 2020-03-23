@@ -1,20 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
 public class ClipInfo : EditorWindow
 {
-    private AnimationClip[] clipList;
-    private AnimationClip idleClip;
-    private List<AnimationClip> errorList;
-    private List<AnimationClip> nonHumanoidList;
-    private int sampleNumber = 100;
-    private float treshold = 0.1f;
-    private float ground = 0.01f;
-    private bool shouldLog = false;
-
-    public static AnimationClip _idle;
+    private AnimationClip _idleClip;
+    private List<AnimationClip> _errorList;
+    private AnalysisManager _analysisManager;
+    private int _sampleNumber = 100;
+    private float _velocityTh = 1.5f;
+    private int _smoothTh = 4;
+    private float _groundTh = 0.01f;
+    private string _path = Directory.GetCurrentDirectory() + @"\Assets\Scripts\AnimData.txt";
 
     [MenuItem("Window/Clip Info")]
     static void Init()
@@ -25,23 +24,21 @@ public class ClipInfo : EditorWindow
     public void OnGUI()
     {
         EditorGUILayout.LabelField("Sample Number");
-        sampleNumber = EditorGUILayout.IntField(sampleNumber);
+        _sampleNumber = EditorGUILayout.IntField(_sampleNumber);
 
         EditorGUILayout.LabelField("Ground Treshold");
-        ground = EditorGUILayout.FloatField(ground);
+        _groundTh = EditorGUILayout.FloatField(_groundTh);
 
-        EditorGUILayout.LabelField("Time Treshold");
-        treshold = EditorGUILayout.FloatField(treshold);
+        EditorGUILayout.LabelField("Velocity Treshold");
+        _velocityTh = EditorGUILayout.FloatField(_velocityTh);
 
         EditorGUILayout.LabelField("Idle Animation");
-        idleClip = EditorGUILayout.ObjectField(idleClip, typeof(AnimationClip), false) as AnimationClip;
-
-        shouldLog = EditorGUILayout.Toggle("Log Data", shouldLog);
+        _idleClip = EditorGUILayout.ObjectField(_idleClip, typeof(AnimationClip), false) as AnimationClip;
 
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Analyze Animation"))
         {
-            AnalyzeMotion();
+            AnalyzeAnimation();
         }
 
         if (GUILayout.Button("Reset"))
@@ -49,80 +46,28 @@ public class ClipInfo : EditorWindow
             Reset();
         }
         EditorGUILayout.EndHorizontal();
-
-        if (nonHumanoidList != null)
-        {
-            foreach (AnimationClip clip in nonHumanoidList)
-            {
-                EditorGUILayout.LabelField(clip.name + ": is not a Humanoid Animation, cannot analyze");
-            }
-        }
-
-        if (errorList != null)
-        {
-            foreach (AnimationClip clip in errorList)
-            {
-                EditorGUILayout.LabelField(clip.name + ": could not analyze motion");
-            }
-        }
     }
 
     private void Reset()
     {
-        AnimationEvent[] empty = new AnimationEvent[0];
-
-        if (clipList != null)
+        if (_analysisManager != null)
         {
-            foreach (AnimationClip clip in clipList)
-            {
-                AnimationUtility.SetAnimationEvents(clip, empty);
-            }
-        }
-        
-        if (errorList != null)
-        {
-            errorList.Clear();
-        }
-
-        if (nonHumanoidList != null)
-        {
-            nonHumanoidList.Clear();
-        }
+            _analysisManager.RemoveCurves();
+        }        
     }
 
-    private void AnalyzeMotion()
-    {
-        LoadClip();
-        Analyze();
-    }
-
-    private void LoadClip()
-    {
-        var list = Resources.LoadAll("AnimationClips", typeof(AnimationClip));
-        clipList = new AnimationClip[list.Length];
-        Array.Copy(list, clipList, list.Length);
-    }
-
-    private void Analyze()
-    {       
-        foreach (AnimationClip clip in clipList)
+    private void AnalyzeAnimation()
+    {        
+        if (_idleClip == null)
         {
-            if (clip.name == idleClip.name)
-            {
-                //ADD RELATIVE POSITION FOR IDLE ANIMATION
-                //ADD FLIGHT TIME AS WELL LOL
-                _idle = clip;
-                continue;
-            }
-
-            if (!clip.humanMotion)
-            {                
-                nonHumanoidList.Add(clip);
-                continue;
-            }
-
-            var animationSample = new AnimationAnalyzer(clip, sampleNumber, ref errorList, ground, treshold);
-            animationSample.AnalyzeAnimation(shouldLog);            
+            EditorUtility.DisplayDialog("Missing Idle", "Please select an Idle Animation", "ok");
+            return;
         }
+
+        _analysisManager = new AnalysisManager();
+        _analysisManager.AnalyzeAnimations(_sampleNumber, _velocityTh, _smoothTh);
+
+        //TODO: I might not have to do this
+        //_analysisManager.StoreData(_path);
     }
 }
