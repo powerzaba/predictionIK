@@ -58,6 +58,7 @@ class Sampler
     private FootPositionInfo CreatePositionStruct(EditorCurveBinding[] bindings)
     {
         FootPositionInfo posInfo = new FootPositionInfo();
+        posInfo.inPlacePosition = new Vector3[_sampleNumber];
         posInfo.position = new Vector3[_sampleNumber];
         posInfo.x = new float[_sampleNumber];
         posInfo.y = new float[_sampleNumber];
@@ -81,6 +82,7 @@ class Sampler
             posInfo.y[i] = y;
             posInfo.z[i] = z;
             posInfo.position[i] = new Vector3(x, y, z);
+            posInfo.inPlacePosition[i] = new Vector3(x, y, z);
         }
 
         return posInfo;
@@ -148,6 +150,7 @@ class Sampler
         }
 
         ConvertFromLocalToWorld();
+        ConvertLocalToWorldInPlace();
         LogData();
     }
 
@@ -169,6 +172,28 @@ class Sampler
                                    .TransformPoint(_leftFootPos.position[i]);
             _rightFootPos.setPosition(rightPos, i);
             _leftFootPos.setPosition(leftPos, i);
+        }
+        UnityEngine.Object.DestroyImmediate(empty);
+    }
+
+    //TODO: ADD THE MATH
+    private void ConvertLocalToWorldInPlace()
+    {
+        GameObject empty = new GameObject();
+        for (int i = 0; i < _sampleNumber; i++)
+        {
+            _rootInfo.position[i].x = 0;
+            _rootInfo.position[i].z = 0;
+
+            empty.transform.position = _rootInfo.position[i];
+            empty.transform.rotation = _rootInfo.rotation[i];
+
+            Vector3 rightPos = empty.transform
+                                    .TransformPoint(_rightFootPos.inPlacePosition[i]);
+            Vector3 leftPos = empty.transform
+                                   .TransformPoint(_leftFootPos.inPlacePosition[i]);
+            _rightFootPos.setInPlace(rightPos, i);
+            _leftFootPos.setInPlace(leftPos, i);
         }
         UnityEngine.Object.DestroyImmediate(empty);
     }
@@ -201,6 +226,7 @@ public struct FootPositionInfo
     public float[] y;
     public float[] z;
     public Vector3[] position;
+    public Vector3[] inPlacePosition;
 
     public void setPosition(Vector3 newPos, int index)
     {
@@ -208,6 +234,11 @@ public struct FootPositionInfo
         y[index] = newPos.y;
         z[index] = newPos.z;
         position[index] = newPos;
+    }
+
+    public void setInPlace(Vector3 newPos, int index)
+    {
+        inPlacePosition[index] = newPos;
     }
 
     public string[] getStringPosition()

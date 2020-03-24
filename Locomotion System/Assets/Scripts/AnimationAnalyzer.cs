@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-
+﻿
 using UnityEngine;
 
 public class AnimationAnalyzer
@@ -22,64 +21,50 @@ public class AnimationAnalyzer
     public void AnalyzeAnimation(float velocityTh, int smoothingTh)
     {
         _sampler.Sample();
+        var rightPos = _sampler._rightFootPos.position;
+        var leftPos = _sampler._leftFootPos.position;
 
-        var rightGroundTimes = FindGroundTimes(_sampler._rightFootPos.position, velocityTh);
-        var leftGroundTimes = FindGroundTimes(_sampler._leftFootPos.position, velocityTh);
+        var rightGroundTimes = FindGroundTimes(rightPos, velocityTh);
+        var leftGroundTimes = FindGroundTimes(leftPos, velocityTh);
 
-        _eventManager.InsertFeetCurve(rightGroundTimes, leftGroundTimes);
+        _eventManager.InsertGroundedCurve(rightGroundTimes, leftGroundTimes);
 
-        /*var leftKeyTimes = GetKeyTimes(_sampler._leftFootPos, groundTh, velocityTh);
-        Debug.Log("IT'S RIGHT");
-        var rightKeyTimes = GetKeyTimes(_sampler._rightFootPos, groundTh, velocityTh);
+        rightPos = _sampler._rightFootPos.inPlacePosition;
+        leftPos = _sampler._leftFootPos.inPlacePosition;
 
-        _eventManager.InsertFeetCurve(leftKeyTimes, rightKeyTimes);
+        var rightData = GenerateFlightTimes(rightGroundTimes, rightPos);
+        var leftData = GenerateFlightTimes(leftGroundTimes, leftPos);
 
-        float leftFlightTime = GetFlightTime(leftKeyTimes);
-        float rightFlightTime = GetFlightTime(rightKeyTimes);
-
-        string rightDis = GetDisplacementVector(rightKeyTimes.strikeIndexes, _sampler._rightFootPos);
-        string leftDis = GetDisplacementVector(leftKeyTimes.strikeIndexes, _sampler._leftFootPos);
-
-        AnimationData data = new AnimationData
-        {
-            clipName = _clip.name,
-            rightFlightTime = rightFlightTime.ToString(),
-            leftFlightTime = leftFlightTime.ToString(),
-            rightDisplacement = rightDis,
-            leftDisplacement = leftDis,
-        };
-
-        return data;*/
+        _eventManager.InsertFlightTimeCurve(rightData.f, leftData.f);
+        _eventManager.InsertDisplacementX(rightData.x, leftData.x);
+        _eventManager.InsertDisplacementZ(rightData.z, leftData.z);
     }
 
     private int[] FindGroundTimes(Vector3[] position, float velocityTh)
     {
         var groundedTimes = new int[_sampleNumber];
         var velocity = new float[_sampleNumber];
-        var distances = new float[_sampleNumber];        
+        var distances = new float[_sampleNumber];
         var prevPosition = Vector3.zero;
         var currPosition = Vector3.zero;
         var deltaTime = _sampler._deltaTime;
 
         for (int i = 0; i < _sampleNumber; i++)
         {
-            prevPosition = (i == 0) ? position[_sampleNumber - 1] : position[i - 1];          
+            prevPosition = (i == 0) ? position[_sampleNumber - 1] : position[i - 1];
             currPosition = position[i];
-
             distances[i] = Vector3.Distance(prevPosition, currPosition);
             velocity[i] = distances[i] / deltaTime;
             groundedTimes[i] = (velocity[i] <= velocityTh) ? 1 : 0;
         }
 
-        var correctedTimes = new int[_sampleNumber];
-        correctedTimes = SmoothGroundTimes(groundedTimes);
-
+        var correctedTimes = SmoothGroundTimes(groundedTimes);
         return correctedTimes;
     }
 
     private int[] SmoothGroundTimes(int[] groundedTimes)
     {
-        var correctedTimes = groundedTimes;        
+        var correctedTimes = groundedTimes;
 
         for (int i = 0; i < groundedTimes.Length; i++)
         {
@@ -95,6 +80,68 @@ public class AnimationAnalyzer
         return correctedTimes;
     }
 
+    private (float[] f, float[] x, float[] z) GenerateFlightTimes(int[] groundedTimes, Vector3[] position)
+    {
+        float[] flightTimes = new float[_sampleNumber];
+        float[] x = new float[_sampleNumber];
+        float[] z = new float[_sampleNumber];
+        var endTime = _clip.length;
+        float flightTime;
+        bool isIdle = true;
+
+        for (int i = 1; i < groundedTimes.Length; i++)
+        {
+            if (groundedTimes[i] != groundedTimes[i - 1])
+            {
+                isIdle = false;
+                if (groundedTimes[i] == 0)
+                {
+                    var liftTime = _timeSample[i];
+                    int liftIndex = i;
+                    var j = i;
+
+                    while (groundedTimes[(int)AnimationAnalyzer.Mod(j, _sampleNumber)] == 0)
+                    {
+                        j++;
+                    }
+
+                    int strikeIndex = (int)AnimationAnalyzer.Mod(j, _sampleNumber);
+                    var strikeTime = _timeSample[strikeIndex];
+
+                    flightTime = (liftTime < strikeTime) ? (strikeTime - liftTime) : 
+                                                           (strikeTime + endTime - liftTime);
+
+                    Vector3 displacement = position[strikeIndex];                    
+                    FillArray(ref flightTimes, flightTime, liftIndex, strikeIndex);
+                    FillArray(ref x, displacement.x, liftIndex, strikeIndex);
+                    FillArray(ref z, displacement.z, liftIndex, strikeIndex);
+                }
+            }
+        }
+
+        //TODO: Fix this code so that it can handle Idle animations
+        /*if (isIdle)
+        {
+            Vector3 displacement = position[0];            
+            FillArray(ref x, displacement.x, 0, 0);
+            FillArray(ref z, displacement.z, 0, 0);
+        }*/
+
+        return (flightTimes, x, z);
+    }
+
+    private void FillArray(ref float[] array, float value, int start, int end)
+    {
+        float length;
+        length = (start < end) ? (end - start) : end + (_sampleNumber - 1) - start;
+
+        for (int i = start; i <= (start + length); i++)
+        {
+            var index = (int)AnimationAnalyzer.Mod(i, _sampleNumber);
+            array[index] = value;
+        }
+    }
+
     public static float Mod(float a, float b)
     {
         float c = a % b;
@@ -104,131 +151,6 @@ public class AnimationAnalyzer
         }
         return c;
     }
-
-    private (int[] peaks, int[] valleys) GetPeaksAndValleys(FootPositionInfo leg)
-    {
-        List<int> peaks = new List<int>();
-        List<int> valleys = new List<int>();
-        float[] axisOfMovement = (_clip.averageSpeed.x > _clip.averageSpeed.z) ? leg.x : leg.z;
-
-        for (int i = 1; i < _sampleNumber - 1; i++)
-        {
-            float a = axisOfMovement[i - 1];
-            float b = axisOfMovement[i];
-            float c = axisOfMovement[i + 1];
-            if ((a < b) && (c < b)) { peaks.Add(i); }
-            if ((a > b) && (c > b)) { valleys.Add(i); }
-        }
-
-        return (peaks.ToArray(), valleys.ToArray());
-    }
-
-    private (int[] strikeIndexes, int[] liftIndexes) GetKeyTimes(FootPositionInfo leg, float gTh, float tTh)
-    {
-        List<int> correctPeaks = new List<int>();
-        List<int> correctValleys = new List<int>();
-        (int[] peaks, int[] valleys) pv;
-        pv = GetPeaksAndValleys(leg);
-
-        float groundTh = 0 + gTh;
-        float timeTh = (int)Mathf.Floor(_sampleNumber * tTh);
-
-        if (pv.peaks.Length <= 0 || pv.valleys.Length <= 0 ||
-           (pv.peaks.Length != pv.valleys.Length))
-        {
-            Debug.Log(_clip.name);
-            Debug.Log(pv.peaks.Length);
-            Debug.Log(pv.valleys.Length);
-
-            //return (correctPeaks.ToArray(), correctValleys.ToArray());
-        }
-
-        foreach (int peak in pv.peaks)
-        {
-            var currentPeak = peak;
-            for (int i = 0; i <= timeTh; i++)
-            {
-                if (i == timeTh)
-                {
-                    correctPeaks.Add(currentPeak);
-                    break;
-                }
-                if (leg.y[currentPeak] <= groundTh)
-                {
-                    correctPeaks.Add(currentPeak);
-                    break;
-                }
-                currentPeak++;
-                if (currentPeak >= _sampleNumber) { currentPeak = 0; }
-            }
-        }
-
-        foreach (int valley in pv.valleys)
-        {
-            var currentValley = valley;
-            for (int i = 0; i <= timeTh; i++)
-            {
-                if (i == timeTh)
-                {
-                    correctValleys.Add(currentValley);
-                    break;
-                }
-                if (leg.y[currentValley] <= groundTh)
-                {
-                    correctValleys.Add(currentValley);
-                    break;
-                }
-                currentValley--;
-                if (currentValley < 0) { currentValley = _sampleNumber - 1; }
-            }
-        }
-
-        return (correctPeaks.ToArray(), correctValleys.ToArray());
-    }
-
-    private string GetDisplacementVector(int[] strikeIndexes, FootPositionInfo leg)
-    {
-        var index = strikeIndexes[0];
-        Vector3 displacementVector = new Vector3(leg.x[index], 0, leg.z[index]);
-
-        return displacementVector.ToString("F8").Replace("(", "").Replace(")", "");
-    }
-
-    private float GetFlightTime((int[] strikeIndexes, int[] liftIndexes) foot)
-    {
-        float strikeTime = _timeSample[foot.strikeIndexes[0]];
-        float liftTime = _timeSample[foot.liftIndexes[0]];
-        float endTime = _clip.length;
-        float flightTime;
-
-        if (strikeTime < liftTime)
-        {
-            if (foot.strikeIndexes.Length > 1)
-            {
-                strikeTime = _timeSample[foot.strikeIndexes[1]];
-                flightTime = strikeTime - liftTime;
-            }
-            else
-            {
-                flightTime = endTime - liftTime + strikeTime;
-            }
-        }
-        else
-        {
-            flightTime = strikeTime - liftTime;
-        }
-
-        return flightTime;
-    }
-}
-
-public struct AnimationData
-{
-    public string clipName;
-    public string rightFlightTime;
-    public string leftFlightTime;
-    public string rightDisplacement;
-    public string leftDisplacement;
 }
 
 

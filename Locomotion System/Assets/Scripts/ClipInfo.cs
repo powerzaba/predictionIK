@@ -66,8 +66,5 @@ public class ClipInfo : EditorWindow
 
         _analysisManager = new AnalysisManager();
         _analysisManager.AnalyzeAnimations(_sampleNumber, _velocityTh, _smoothTh);
-
-        //TODO: I might not have to do this
-        //_analysisManager.StoreData(_path);
     }
 }
