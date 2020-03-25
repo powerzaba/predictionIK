@@ -36,8 +36,8 @@ public class EventManager
         AnimationCurve leftFootCurve;
         AnimationCurve rightFootCurve;
 
-        List<Keyframe> leftKeys = GenerateKeyFrames(leftFlightData);
-        List<Keyframe> rightKeys = GenerateKeyFrames(rightFlightData);
+        List<Keyframe> leftKeys = GenerateContinuousFrames(leftFlightData);
+        List<Keyframe> rightKeys = GenerateContinuousFrames(rightFlightData);
 
         leftFootCurve = new AnimationCurve(leftKeys.ToArray());
         rightFootCurve = new AnimationCurve(rightKeys.ToArray());
@@ -52,8 +52,8 @@ public class EventManager
         AnimationCurve leftFootCurveX;        
         AnimationCurve rightFootCurveX;        
 
-        List<Keyframe> leftKeys = GenerateKeyFrames(leftFootDis);
-        List<Keyframe> rightKeys = GenerateKeyFrames(rightFootDis);
+        List<Keyframe> leftKeys = GenerateContinuousFrames(leftFootDis);
+        List<Keyframe> rightKeys = GenerateContinuousFrames(rightFootDis);
 
         leftFootCurveX = new AnimationCurve(leftKeys.ToArray());
         rightFootCurveX = new AnimationCurve(rightKeys.ToArray());
@@ -67,8 +67,8 @@ public class EventManager
         AnimationCurve leftFootCurveZ;
         AnimationCurve rightFootCurveZ;
 
-        List<Keyframe> leftKeys = GenerateKeyFrames(leftFootDis);
-        List<Keyframe> rightKeys = GenerateKeyFrames(rightFootDis);
+        List<Keyframe> leftKeys = GenerateContinuousFrames(leftFootDis);
+        List<Keyframe> rightKeys = GenerateContinuousFrames(rightFootDis);
 
         leftFootCurveZ = new AnimationCurve(leftKeys.ToArray());
         rightFootCurveZ = new AnimationCurve(rightKeys.ToArray());
@@ -94,29 +94,28 @@ public class EventManager
 
     private List<Keyframe> GenerateKeyFrames(float[] data)
     {
-        List<Keyframe> footKeys = new List<Keyframe>();
-        bool isIdle = true;
-        var infinity = Mathf.Infinity;
+        var footKeys = new List<Keyframe>();
+        var isIdle = true;
+        const float infinity = Mathf.Infinity;
         
-        for (int i = 1; i < data.Length; i ++)
+        for (var i = 1; i < data.Length; i ++)
         {
-            if (data[i] != data[i - 1])
-            {
-                isIdle = false;
-                var value = data[i];
-                var prevValue = data[i - 1];
-                var time = _timeSample[i];
+            if (data[i] == data[i - 1]) continue;
+            
+            isIdle = false;
+            var value = data[i];
+            var prevValue = data[i - 1];
+            var time = _timeSample[i];
 
-                if (value != 0)
-                {
-                    footKeys.Add(new Keyframe(time, value, infinity, infinity));
-                    footKeys.Add(new Keyframe(time - 0.001f, 0, infinity, infinity));
-                }
-                else
-                {
-                    footKeys.Add(new Keyframe(time, 0, infinity, infinity));
-                    footKeys.Add(new Keyframe(time - 0.001f, prevValue, infinity, infinity));
-                }
+            if (value != 0)
+            {
+                footKeys.Add(new Keyframe(time, value, infinity, infinity));
+                footKeys.Add(new Keyframe(time - 0.001f, 0, infinity, infinity));
+            }
+            else
+            {
+                footKeys.Add(new Keyframe(time, 0, infinity, infinity));
+                footKeys.Add(new Keyframe(time - 0.001f, prevValue, infinity, infinity));
             }
         }
 
@@ -124,6 +123,31 @@ public class EventManager
             footKeys.Add(new Keyframe(0, data[0], Mathf.Infinity, Mathf.Infinity));        
 
         return footKeys;
-    }   
+    }
+
+    private List<Keyframe> GenerateContinuousFrames(float[] data)
+    {
+        var footKeys = new List<Keyframe>();
+        var isIdle = true;
+        const float infinity = Mathf.Infinity;
+        
+        for (var i = 1; i < data.Length; i ++)
+        {
+            if (data[i] == data[i - 1]) continue;
+            
+            isIdle = false;
+            var value = data[i];
+            var prevValue = data[i - 1];
+            var time = _timeSample[i];
+            
+            footKeys.Add(new Keyframe(time, value, infinity, infinity));
+            footKeys.Add(new Keyframe(time - 0.001f, prevValue, infinity, infinity));
+        }
+
+        if (isIdle)        
+            footKeys.Add(new Keyframe(0, data[0], Mathf.Infinity, Mathf.Infinity));        
+
+        return footKeys;
+    }
 }
 

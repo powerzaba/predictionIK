@@ -20,8 +20,8 @@ public static class StateManager
     public static float currentFlightTime = 0f;
     public static Vector3 currentRightDis = Vector3.zero;
     public static Vector3 currentLeftDis = Vector3.zero;
-    //public static Vector3 currentVelocity = Vector3.zero;
-    public static float currentVelocity;
+    public static Vector3 currentVelocity = Vector3.zero;
+    //public static float currentVelocity;
     public static Vector3 currentDirectionModel;
     
     public static void UpdateState(Animator animator, CharacterController ch)
@@ -51,7 +51,6 @@ public static class StateManager
         Vector3 velocity = Vector3.zero;
 
         var rightFlight = animator.GetFloat("RightFlightCurve");
-        Debug.Log(rightFlight);
         var leftFlight = animator.GetFloat("LeftFlightCurve");
 
         var rightDisplacementX = animator.GetFloat("RightDisplacementX");
@@ -68,7 +67,7 @@ public static class StateManager
         currentFlightTime = rightFlight;
         currentRightDis = new Vector3(rightDisplacementX, 0, rightDisplacementZ);
         currentLeftDis = new Vector3(leftDisplacementX, 0, leftDisplacementZ);
-        //currentVelocity = velocity;
+        currentVelocity = velocity;
     }
 
     public static void UpdateFeetStatus(Animator animator)
@@ -79,8 +78,8 @@ public static class StateManager
         rightFootPosition = animator.GetBoneTransform(HumanBodyBones.RightFoot).position;
         leftFootPosition = animator.GetBoneTransform(HumanBodyBones.LeftFoot).position;
 
-        rightFootGround = (rightValue == 1) ? true : false;
-        leftFootGround = (leftValue == 1) ? true : false;
+        rightFootGround = (rightValue < 0.5f) ? false : true;
+        leftFootGround = (leftValue < 0.5f) ? false : true;
     }
 
     public static void UpdateDirectionAndVelocity(Animator animator)
@@ -88,7 +87,7 @@ public static class StateManager
         currentPosition = animator.bodyPosition;
         //TODO: CHECK THIS
         currentPosition.y = 0f;
-        currentVelocity = Vector3.Distance(previousPosition, currentPosition) / Time.deltaTime;
+        //currentVelocity = Vector3.Distance(previousPosition, currentPosition) / Time.deltaTime;
         Vector3 diff = (currentPosition - previousPosition).normalized;
 
         currentDirection = diff;

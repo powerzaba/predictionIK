@@ -71,11 +71,11 @@ public class FeetPredictor
 
             if (currentFlightTime <= rightFlightDuration)
             {
-                currentFlightTime = rightFlightDuration;
+                //currentFlightTime = rightFlightDuration;
             }
             
-            //var currentVelocity = currentRotation * StateManager.currentVelocity;
-            var currentVelocity = StateManager.currentVelocity * currentDirection;
+            var currentVelocity = currentRotation * StateManager.currentVelocity;
+            //var currentVelocity = StateManager.currentVelocity * currentDirection;
             var currentTime = Time.time;
             var rightRemainingTime = currentFlightTime - rightFlightDuration;
             var nextRightFootprintTime = currentTime + rightRemainingTime;
@@ -105,7 +105,7 @@ public class FeetPredictor
             //predictedLeftFootPosition = GetGroundPoint(predictedLeftFootPosition);
 
 
-            rightShadowPosition = predictedRightFootPosition - currentRotation * new Vector3(0, 0, distance);
+            //rightShadowPosition = predictedRightFootPosition - currentRotation * new Vector3(0, 0, distance);
 
         //}
 

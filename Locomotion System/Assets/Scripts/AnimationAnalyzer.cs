@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 using UnityEngine;
 
 public class AnimationAnalyzer
@@ -32,7 +33,19 @@ public class AnimationAnalyzer
         var rightPosInPlace = _sampler._rightFootPos.inPlacePosition;
         var leftPosInPlace = _sampler._leftFootPos.inPlacePosition;
 
+        if (_clip.name == "PIK_Capueira")
+        {
+            Debug.Log("YOLO RIGHT/////////////");
+        }
+
+        
         var rightData = GenerateFlightTimes(rightGroundTimes, rightPosInPlace, rightPos);
+        if (_clip.name == "PIK_Capueira")
+        {
+            Debug.Log("YOLO LEFT/////////////");
+        }
+        
+        
         var leftData = GenerateFlightTimes(leftGroundTimes, leftPosInPlace, leftPos);
 
         _eventManager.InsertFlightTimeCurve(rightData.f, leftData.f);
@@ -83,18 +96,25 @@ public class AnimationAnalyzer
 
     private (float[] f, float[] x, float[] z, float[] s) GenerateFlightTimes(int[] groundedTimes, Vector3[] inPlacePos, Vector3[] position)
     {
-        float[] flightTimes = new float[_sampleNumber];
+        var flightTimes = new float[_sampleNumber];
         float[] x = new float[_sampleNumber];
         float[] z = new float[_sampleNumber];
+        
+        //TODO: refactor this method
         //stride test
         float[] s = new float[_sampleNumber];
-        int prevStrike = 0;
+        
+        //test
+        List<int> strikeList = new List<int>();
+        List<float> flightList = new List<float>();
+        List<float> xList = new List<float>();
+        List<float> zList = new List<float>();
 
         var endTime = _clip.length;
         float flightTime;
         bool isIdle = true;
 
-        for (int i = 1; i < groundedTimes.Length; i++)
+        for (var i = 1; i < groundedTimes.Length; i++)
         {
             if (groundedTimes[i] != groundedTimes[i - 1])
             {
@@ -110,7 +130,7 @@ public class AnimationAnalyzer
                         j++;
                     }
 
-                    int strikeIndex = (int)AnimationAnalyzer.Mod(j, _sampleNumber);
+                    int strikeIndex = (int)AnimationAnalyzer.Mod(j + 1, _sampleNumber);
                     var strikeTime = _timeSample[strikeIndex];
 
                     flightTime = (liftTime < strikeTime) ? (strikeTime - liftTime) :
@@ -134,17 +154,42 @@ public class AnimationAnalyzer
                     {
                         strideLength = Vector3.Distance(endPos, startPos);
                     }
+                    
+                    strikeList.Add(strikeIndex);
+                    flightList.Add(flightTime);
+                    xList.Add(displacement.x);
+                    zList.Add(displacement.z);
 
-                    FillArray(ref flightTimes, flightTime, prevStrike, strikeIndex);     
-                    FillArray(ref x, displacement.x, liftIndex, strikeIndex);
-                    FillArray(ref z, displacement.z, liftIndex, strikeIndex);
+                    //FillArray(ref flightTimes, flightTime, liftIndex, strikeIndex);     
+                    //FillArray(ref x, displacement.x, liftIndex, strikeIndex);
+                    //FillArray(ref z, displacement.z, liftIndex, strikeIndex);
                     FillArray(ref s, strideLength, liftIndex, strikeIndex);
-
-                    prevStrike = strikeIndex;
                 }
             }
         }
 
+        for (var i = 0; i < strikeList.Count; i++)
+        {
+            var currentFlight = flightList[i];
+            var prevStrike = strikeList[(int)AnimationAnalyzer.Mod((i - 1), strikeList.Count)];
+            var currentStrike = strikeList[i];
+            var currentX = xList[i];
+            var currentZ = zList[i];
+            FillArray(ref x, currentX, prevStrike, currentStrike);
+            FillArray(ref z, currentZ, prevStrike, currentStrike);
+            FillArray(ref flightTimes, currentFlight, prevStrike, currentStrike);
+        }
+        
+        //test
+        if (_clip.name == "PIK_Capueira")
+        {
+            foreach (var a in flightTimes)
+            {
+                Debug.Log(a);
+            }
+        }
+        
+        
         if (isIdle)
         {
             Vector3 displacement = inPlacePos[0];
@@ -156,12 +201,11 @@ public class AnimationAnalyzer
         return (flightTimes, x, z, s);
     }
 
-    private void FillArray(ref float[] array, float value, int start, int end)
+    private void FillArray(ref float[] array, float value, int startIndex, int endIndex)
     {
-        float length;
-        length = (start < end) ? (end - start) : end + (_sampleNumber - 1) - start;
+        float length = (startIndex < endIndex) ? (endIndex - startIndex) : endIndex + (_sampleNumber - 1) - startIndex;
 
-        for (int i = start; i <= (start + length); i++)
+        for (var i = startIndex; i <= (startIndex + length); i++)
         {
             var index = (int)AnimationAnalyzer.Mod(i, _sampleNumber);
             array[index] = value;
@@ -170,7 +214,7 @@ public class AnimationAnalyzer
 
     public static float Mod(float a, float b)
     {
-        float c = a % b;
+        var c = a % b;
         if ((c < 0 && b > 0) || (c > 0 && b < 0))
         {
             c += b;

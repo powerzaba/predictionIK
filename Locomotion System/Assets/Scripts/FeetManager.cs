@@ -41,10 +41,10 @@ public class FeetManager : MonoBehaviour
         if (!Application.isPlaying) return;
 
         Gizmos.color = Color.red;
-        if (StateManager.rightFootGround)               
-            //Gizmos.DrawSphere(StateManager.rightFootPosition, 0.1f);
+        if (StateManager.rightFootGround)
+            Gizmos.DrawCube(StateManager.rightFootPosition, new Vector3(0.2f,0.2f,0.2f));
 
-        Gizmos.color = Color.blue;
+            Gizmos.color = Color.blue;
         if (StateManager.leftFootGround)
             //Gizmos.DrawSphere(StateManager.leftFootPosition, 0.1f);
 
@@ -60,11 +60,11 @@ public class FeetManager : MonoBehaviour
         //Gizmos.DrawSphere(StateManager.currentPosition, 0.1f);
 
         Gizmos.color = Color.magenta;
-        //Gizmos.DrawSphere(_predictor.predictefRootPositionRight, 0.1f);
+        //Gizmos.DrawSphere(_predictor.predictedRootPositionRight, 0.1f);
 
-        Gizmos.color = Color.blue;
+        //Gizmos.color = Color.blue;
         //Gizmos.DrawSphere(_predictor.predictedRootPositionLeft, 0.1f);
-        Gizmos.DrawSphere(_predictor.rightShadowPosition, 0.1f);
+        //Gizmos.DrawSphere(_predictor.rightShadowPosition, 0.1f);
 
         
 
