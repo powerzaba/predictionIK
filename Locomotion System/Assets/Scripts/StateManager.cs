@@ -66,6 +66,7 @@ public static class StateManager
 
         currentFlightTime = rightFlight;
         currentRightDis = new Vector3(rightDisplacementX, 0, rightDisplacementZ);
+        Debug.Log(currentRightDis.z);
         currentLeftDis = new Vector3(leftDisplacementX, 0, leftDisplacementZ);
         currentVelocity = velocity;
     }
@@ -78,8 +79,8 @@ public static class StateManager
         rightFootPosition = animator.GetBoneTransform(HumanBodyBones.RightFoot).position;
         leftFootPosition = animator.GetBoneTransform(HumanBodyBones.LeftFoot).position;
 
-        rightFootGround = (rightValue < 0.5f) ? false : true;
-        leftFootGround = (leftValue < 0.5f) ? false : true;
+        rightFootGround = (rightValue == 1) ? true : false;
+        leftFootGround = (leftValue == 1) ? true : false;
     }
 
     public static void UpdateDirectionAndVelocity(Animator animator)

@@ -68,12 +68,6 @@ public class FeetPredictor
         //{
             Quaternion currentRotation = Quaternion.LookRotation(currentDirection);
             var currentFlightTime = StateManager.currentFlightTime;
-
-            if (currentFlightTime <= rightFlightDuration)
-            {
-                //currentFlightTime = rightFlightDuration;
-            }
-            
             var currentVelocity = currentRotation * StateManager.currentVelocity;
             //var currentVelocity = StateManager.currentVelocity * currentDirection;
             var currentTime = Time.time;
@@ -107,8 +101,7 @@ public class FeetPredictor
 
             //rightShadowPosition = predictedRightFootPosition - currentRotation * new Vector3(0, 0, distance);
 
-        //}
-
+        //}    
     }
 
     private Vector3 GetGroundPoint(Vector3 predicredPosition)

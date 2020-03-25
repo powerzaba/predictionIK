@@ -57,10 +57,10 @@ public class FeetManager : MonoBehaviour
         }
 
         Gizmos.color = Color.cyan;
-        //Gizmos.DrawSphere(StateManager.currentPosition, 0.1f);
+        Gizmos.DrawSphere(StateManager.currentPosition, 0.1f);
 
         Gizmos.color = Color.magenta;
-        //Gizmos.DrawSphere(_predictor.predictedRootPositionRight, 0.1f);
+        Gizmos.DrawSphere(_predictor.predictedRootPositionRight, 0.1f);
 
         //Gizmos.color = Color.blue;
         //Gizmos.DrawSphere(_predictor.predictedRootPositionLeft, 0.1f);
