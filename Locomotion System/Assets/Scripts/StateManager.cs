@@ -4,6 +4,9 @@ using UnityEngine;
 
 public static class StateManager
 {
+    public static FootData leftFoot = new FootData();
+    public static FootData rightFoot = new FootData();
+
     public static bool rightFootGround = true;
     public static bool leftFootGround = true;
 
@@ -14,38 +17,58 @@ public static class StateManager
     public static Vector3 currentPosition = Vector3.zero;
     public static Vector3 previousPosition = currentPosition;
 
-    public static Dictionary<string, FootData> feetData = new Dictionary<string, FootData>();
     public static float currentFlightTime = 0f;
     public static Vector3 currentRightDis = Vector3.zero;
     public static Vector3 currentLeftDis = Vector3.zero;
-    public static Vector3 currentVelocity = Vector3.zero;
+    //public static Vector3 currentVelocity = Vector3.zero;
+    public static float currentVelocity;
+    public static Vector3 currentDirectionModel;
     
     public static void UpdateState(Animator animator, CharacterController ch)
     {
         UpdateFeetStatus(animator);
-        UpdateDirection(animator);
+        UpdateDirectionAndVelocity(animator);
         UpdateFeetData(animator);
+    }
+
+    public static void UpdataFeetData(Animator animator, float ok)
+    {
+        var rightFlight = animator.GetFloat("RightFlightCurve");
+        var leftFlight = animator.GetFloat("LeftFlightCurve");
+
+        var rightX = animator.GetFloat("RightDisplacementX");
+        var rightZ = animator.GetFloat("RightDisplacementZ");
+
+        var leftX = animator.GetFloat("LeftDisplacementX");
+        var leftZ = animator.GetFloat("LeftDisplacementZ");
+
+        var rightStride = animator.GetFloat("RightStrideLength");
+        var leftStride = animator.GetFloat("LeftStrideLength");
     }
 
     public static void UpdateFeetData(Animator animator)
     {
-        var flightTime = 0f;
-        Vector3 right = Vector3.zero;
-        Vector3 left = Vector3.zero;
         Vector3 velocity = Vector3.zero;
 
+        var rightFlight = animator.GetFloat("RightFlightCurve");
+        Debug.Log(rightFlight);
+        var leftFlight = animator.GetFloat("LeftFlightCurve");
+
+        var rightDisplacementX = animator.GetFloat("RightDisplacementX");
+        var rightDisplacementZ = animator.GetFloat("RightDisplacementZ");
+
+        var leftDisplacementX = animator.GetFloat("LeftDisplacementX");
+        var leftDisplacementZ = animator.GetFloat("LeftDisplacementZ");
+
         foreach (var info in animator.GetCurrentAnimatorClipInfo(0))
-        {
-            flightTime += feetData[info.clip.name].flightTime * info.weight;
-            right += feetData[info.clip.name].rightDisplacement * info.weight;
-            left += feetData[info.clip.name].leftDisplacement * info.weight;
+        {            
             velocity += info.clip.averageSpeed * info.weight;
         }
 
-        currentFlightTime = flightTime;
-        currentRightDis = right;
-        currentLeftDis = left;
-        currentVelocity = velocity;
+        currentFlightTime = rightFlight;
+        currentRightDis = new Vector3(rightDisplacementX, 0, rightDisplacementZ);
+        currentLeftDis = new Vector3(leftDisplacementX, 0, leftDisplacementZ);
+        //currentVelocity = velocity;
     }
 
     public static void UpdateFeetStatus(Animator animator)
@@ -60,66 +83,29 @@ public static class StateManager
         leftFootGround = (leftValue == 1) ? true : false;
     }
 
-    public static void UpdateDirection(Animator animator)
+    public static void UpdateDirectionAndVelocity(Animator animator)
     {
         currentPosition = animator.bodyPosition;
-        //TODO CHECK THIS
+        //TODO: CHECK THIS
         currentPosition.y = 0f;
+        currentVelocity = Vector3.Distance(previousPosition, currentPosition) / Time.deltaTime;
         Vector3 diff = (currentPosition - previousPosition).normalized;
 
         currentDirection = diff;
         previousPosition = currentPosition;
-    }
+    }   
 
-    public static void GetDataFromAnimator(Animator animator)
+    public static void UpdateModelDirection(GameObject model)
     {
-        foreach (var clip in animator.runtimeAnimatorController.animationClips)
-        {
-            AnimationEvent[] evt = clip.events;
-            FootData data;
-            if (evt.Length != 0)
-            {
-                var flightTime = evt[0].floatParameter;
-                var disVectors = evt[0].stringParameter;
-                (Vector3 r, Vector3 l) = GetDisplacementVector(disVectors);
-                data = new FootData(r, l, flightTime);
-                feetData.Add(clip.name, data);
-            }
-            else
-            {
-                //TODO FIX FOR IDLE POSE
-                data = new FootData(Vector3.zero, Vector3.zero, 0);
-                feetData.Add(clip.name, data);
-            }
-        }
-    }
-
-    private static (Vector3 r, Vector3 l) GetDisplacementVector(string vectors)
-    {
-        Vector3 r = Vector3.zero;
-        Vector3 l = Vector3.zero;
-
-        string[] r_l = vectors.Split('#');
-        string[] rV = r_l[0].Split(',');
-        string[] lV = r_l[1].Split(',');
-
-        r = new Vector3(float.Parse(rV[0]), float.Parse(rV[1]), float.Parse(rV[2]));
-        l = new Vector3(float.Parse(lV[0]), float.Parse(lV[1]), float.Parse(lV[2]));
-
-        return (r, l);
+        currentDirectionModel = model.transform.forward;
     }
 }
 
 public struct FootData
 {
-    public Vector3 rightDisplacement;
-    public Vector3 leftDisplacement;
-    public float flightTime;
-
-    public FootData(Vector3 r, Vector3 l, float ft)
-    {
-        rightDisplacement = r;
-        leftDisplacement = l;
-        flightTime = ft;
-    }
+    public bool isGrounded;
+    public float currentFlightTime;
+    public float currentStrideLegth;
+    public Vector3 currentPosition;
+    public Vector3 currentDisplacement;    
 }

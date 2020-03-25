@@ -4,10 +4,10 @@ using UnityEngine;
 public class AnimationAnalyzer
 {
     private AnimationClip _clip;
-    private int _sampleNumber;
-    private float[] _timeSample;
-    private Sampler _sampler;
-    private EventManager _eventManager;
+    private readonly int _sampleNumber;
+    private readonly float[] _timeSample;
+    private readonly Sampler _sampler;
+    private readonly EventManager _eventManager;
 
     public AnimationAnalyzer(AnimationClip clip, int sampleNumber)
     {
@@ -29,15 +29,16 @@ public class AnimationAnalyzer
 
         _eventManager.InsertGroundedCurve(rightGroundTimes, leftGroundTimes);
 
-        rightPos = _sampler._rightFootPos.inPlacePosition;
-        leftPos = _sampler._leftFootPos.inPlacePosition;
+        var rightPosInPlace = _sampler._rightFootPos.inPlacePosition;
+        var leftPosInPlace = _sampler._leftFootPos.inPlacePosition;
 
-        var rightData = GenerateFlightTimes(rightGroundTimes, rightPos);
-        var leftData = GenerateFlightTimes(leftGroundTimes, leftPos);
+        var rightData = GenerateFlightTimes(rightGroundTimes, rightPosInPlace, rightPos);
+        var leftData = GenerateFlightTimes(leftGroundTimes, leftPosInPlace, leftPos);
 
         _eventManager.InsertFlightTimeCurve(rightData.f, leftData.f);
         _eventManager.InsertDisplacementX(rightData.x, leftData.x);
         _eventManager.InsertDisplacementZ(rightData.z, leftData.z);
+        _eventManager.InsertStepLength(rightData.s, leftData.s);
     }
 
     private int[] FindGroundTimes(Vector3[] position, float velocityTh)
@@ -80,11 +81,15 @@ public class AnimationAnalyzer
         return correctedTimes;
     }
 
-    private (float[] f, float[] x, float[] z) GenerateFlightTimes(int[] groundedTimes, Vector3[] position)
+    private (float[] f, float[] x, float[] z, float[] s) GenerateFlightTimes(int[] groundedTimes, Vector3[] inPlacePos, Vector3[] position)
     {
         float[] flightTimes = new float[_sampleNumber];
         float[] x = new float[_sampleNumber];
         float[] z = new float[_sampleNumber];
+        //stride test
+        float[] s = new float[_sampleNumber];
+        int prevStrike = 0;
+
         var endTime = _clip.length;
         float flightTime;
         bool isIdle = true;
@@ -108,26 +113,47 @@ public class AnimationAnalyzer
                     int strikeIndex = (int)AnimationAnalyzer.Mod(j, _sampleNumber);
                     var strikeTime = _timeSample[strikeIndex];
 
-                    flightTime = (liftTime < strikeTime) ? (strikeTime - liftTime) : 
+                    flightTime = (liftTime < strikeTime) ? (strikeTime - liftTime) :
                                                            (strikeTime + endTime - liftTime);
 
-                    Vector3 displacement = position[strikeIndex];                    
-                    FillArray(ref flightTimes, flightTime, liftIndex, strikeIndex);
+                    Vector3 startPos = position[liftIndex];
+                    Vector3 endPos = position[strikeIndex];
+                    Vector3 displacement = inPlacePos[strikeIndex];
+
+                    //stridelength test
+                    float strideLength;
+                    if (strikeTime < liftTime)
+                    {
+                        Vector3 finalPos = position[_sampleNumber - 1];
+                        Vector3 initialPos = position[0];
+                        float d1 = Vector3.Distance(finalPos, startPos);
+                        float d2 = Vector3.Distance(initialPos, endPos);
+                        strideLength = d1 + d2;
+                    }
+                    else
+                    {
+                        strideLength = Vector3.Distance(endPos, startPos);
+                    }
+
+                    FillArray(ref flightTimes, flightTime, prevStrike, strikeIndex);     
                     FillArray(ref x, displacement.x, liftIndex, strikeIndex);
                     FillArray(ref z, displacement.z, liftIndex, strikeIndex);
+                    FillArray(ref s, strideLength, liftIndex, strikeIndex);
+
+                    prevStrike = strikeIndex;
                 }
             }
         }
 
-        //TODO: Fix this code so that it can handle Idle animations
-        /*if (isIdle)
+        if (isIdle)
         {
-            Vector3 displacement = position[0];            
-            FillArray(ref x, displacement.x, 0, 0);
-            FillArray(ref z, displacement.z, 0, 0);
-        }*/
+            Vector3 displacement = inPlacePos[0];
+            FillArray(ref x, displacement.x, 0, _sampleNumber - 1);
+            FillArray(ref z, displacement.z, 0, _sampleNumber - 1);
+            FillArray(ref s, 0, 0, _sampleNumber - 1);
+        }
 
-        return (flightTimes, x, z);
+        return (flightTimes, x, z, s);
     }
 
     private void FillArray(ref float[] array, float value, int start, int end)

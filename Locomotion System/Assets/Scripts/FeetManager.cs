@@ -13,14 +13,14 @@ public class FeetManager : MonoBehaviour
 
     void Start()
     {
-        _animator = GetComponent<Animator>();        
-        _locomotionScript = GetComponent<LocomotionController>();
+        _animator = GetComponent<Animator>();
         _model = this.gameObject;
+        _locomotionScript = GetComponent<LocomotionController>();
         _feetController = new FeetController(_animator);
         _predictor = new FeetPredictor(_animator);
         _characterController = GetComponent<CharacterController>();
 
-        StateManager.GetDataFromAnimator(_animator);
+        //StateManager.GetDataFromAnimator(_animator);
     }
 
     void Update()
@@ -31,6 +31,7 @@ public class FeetManager : MonoBehaviour
     private void OnAnimatorIK(int layerIndex)
     {
         StateManager.UpdateState(_animator, _characterController);
+        StateManager.UpdateModelDirection(_model);
         _predictor.UpdateState();
         _predictor.PredictFeetPosition();
     }
@@ -74,7 +75,7 @@ public class FeetManager : MonoBehaviour
 
         Gizmos.color = Color.green;
         Vector3 ok = _predictor.predictedLeftFootPosition;
-        Gizmos.DrawSphere(ok, 0.1f);
+        //Gizmos.DrawSphere(ok, 0.1f);
 
         Color lightRed = new Color(244, 141, 112);
         Color lightBlue = new Color(104, 172, 221);

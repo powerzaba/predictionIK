@@ -2,7 +2,7 @@
 
 public class FeetPredictor
 {
-    private Animator _animator;
+    private Animator _animator;    
     public Vector3 predictedRightFootPosition { get; private set; }
     public Vector3 predictedLeftFootPosition { get; private set; }
 
@@ -59,15 +59,29 @@ public class FeetPredictor
 
     public void PredictFeetPosition()
     {
-        var currentDirection = StateManager.currentDirection;
-        if (currentDirection != Vector3.zero)
+        var currentDirection = StateManager.currentDirectionModel;
+        if (currentDirection == Vector3.zero)
         {
+            currentDirection = StateManager.currentDirectionModel;
+        }
+        //if (currentDirection != Vector3.zero)
+        //{
             Quaternion currentRotation = Quaternion.LookRotation(currentDirection);
             var currentFlightTime = StateManager.currentFlightTime;
-            var currentVelocity = currentRotation * StateManager.currentVelocity;
+
+            if (currentFlightTime <= rightFlightDuration)
+            {
+                currentFlightTime = rightFlightDuration;
+            }
+            
+            //var currentVelocity = currentRotation * StateManager.currentVelocity;
+            var currentVelocity = StateManager.currentVelocity * currentDirection;
             var currentTime = Time.time;
             var rightRemainingTime = currentFlightTime - rightFlightDuration;
             var nextRightFootprintTime = currentTime + rightRemainingTime;
+
+            //test
+            //nextRightFootprintTime = (nextRightFootprintTime < currentTime) ? currentTime : nextRightFootprintTime;
             nextRightFootTime = nextRightFootprintTime;
 
             var leftRemainingTime = currentFlightTime - leftFlightDuration;
@@ -80,20 +94,21 @@ public class FeetPredictor
             predictedRootPositionLeft = StateManager.currentPosition + (currentVelocity * (nextLeftFootprintTime - currentTime));
 
             //Test offset
-            Vector3 offset = currentRotation * new Vector3(0, 0, 0.2f);
+            Vector3 offset = currentRotation * new Vector3(0, 0, 0);
 
             //test physics
             predictedRightFootPosition = predictedRootPositionRight + rightDis + offset;
             predictedRightFootPosition = GetGroundPoint(predictedRightFootPosition);
 
 
-            predictedLeftFootPosition = predictedRootPositionLeft + leftDis + offset;
-            predictedLeftFootPosition = GetGroundPoint(predictedLeftFootPosition);
+            //predictedLeftFootPosition = predictedRootPositionLeft + leftDis + offset;
+            //predictedLeftFootPosition = GetGroundPoint(predictedLeftFootPosition);
 
 
             rightShadowPosition = predictedRightFootPosition - currentRotation * new Vector3(0, 0, distance);
 
-        }
+        //}
+
     }
 
     private Vector3 GetGroundPoint(Vector3 predicredPosition)

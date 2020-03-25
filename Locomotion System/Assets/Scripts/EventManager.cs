@@ -77,6 +77,21 @@ public class EventManager
         _clip.SetCurve("", typeof(Animator), "RightDisplacementZ", rightFootCurveZ);
     }
 
+    public void InsertStepLength(float[] rightLength, float[] leftLength)
+    {
+        AnimationCurve leftStrideLength;
+        AnimationCurve rightStrideLength;
+
+        List<Keyframe> leftKeys = GenerateKeyFrames(leftLength);
+        List<Keyframe> rightKeys = GenerateKeyFrames(rightLength);
+
+        leftStrideLength = new AnimationCurve(leftKeys.ToArray());
+        rightStrideLength = new AnimationCurve(rightKeys.ToArray());
+
+        _clip.SetCurve("", typeof(Animator), "LeftStrideLength", leftStrideLength);
+        _clip.SetCurve("", typeof(Animator), "RightStrideLength", rightStrideLength);
+    }
+
     private List<Keyframe> GenerateKeyFrames(float[] data)
     {
         List<Keyframe> footKeys = new List<Keyframe>();
