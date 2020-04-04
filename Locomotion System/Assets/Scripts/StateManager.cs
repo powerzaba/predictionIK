@@ -9,6 +9,8 @@ public static class StateManager
 
     public static bool rightFootGround = true;
     public static bool leftFootGround = true;
+    public static float rightPreviousVal = 1;
+    public static float leftPreviousVal = 1;
 
     public static Vector3 rightFootPosition = Vector3.zero;
     public static Vector3 leftFootPosition = Vector3.zero;
@@ -66,7 +68,6 @@ public static class StateManager
 
         currentFlightTime = rightFlight;
         currentRightDis = new Vector3(rightDisplacementX, 0, rightDisplacementZ);
-        Debug.Log(currentRightDis.z);
         currentLeftDis = new Vector3(leftDisplacementX, 0, leftDisplacementZ);
         currentVelocity = velocity;
     }
@@ -78,9 +79,24 @@ public static class StateManager
 
         rightFootPosition = animator.GetBoneTransform(HumanBodyBones.RightFoot).position;
         leftFootPosition = animator.GetBoneTransform(HumanBodyBones.LeftFoot).position;
-
-        rightFootGround = (rightValue == 1) ? true : false;
+        
+        
+        if (rightPreviousVal != 0 && rightValue == 0)
+        {
+            rightFootGround = false;
+        }
+        
+        if (rightValue == 1)
+        {
+            rightFootGround = true;
+        } 
+        
+        
+        // rightFootGround = (rightValue == 1) ? true : false;
         leftFootGround = (leftValue == 1) ? true : false;
+
+        rightPreviousVal = rightValue;
+        leftPreviousVal = leftValue;
     }
 
     public static void UpdateDirectionAndVelocity(Animator animator)
