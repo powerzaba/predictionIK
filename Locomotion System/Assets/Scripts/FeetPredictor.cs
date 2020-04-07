@@ -5,10 +5,8 @@ public class FeetPredictor
     private Animator _animator;    
     public Vector3 predictedRightFootPosition { get; private set; }
     public Vector3 predictedLeftFootPosition { get; private set; }
-
     public Vector3 previousFootprintRight { get; private set; }
     public Vector3 previousFootprintLeft { get; private set; }
-
     public Vector3 predictedRootPositionRight { get; private set; }
     public Vector3 predictedRootPositionLeft { get; private set; }
 
@@ -16,10 +14,12 @@ public class FeetPredictor
     private float leftFlightDuration = 0f;
 
     public float nextRightFootTime;
+    
     public Vector3 rightShadowPosition;
-
-    private bool firstTime = false;
-    private float distance = 0;
+    public Vector3 leftShadowPosition;
+    
+    //test predicted rotation
+    public Quaternion predictedRightRotation { get; private set; }
 
     public FeetPredictor(Animator animator)
     {
@@ -31,17 +31,9 @@ public class FeetPredictor
         if (!StateManager.rightFootGround)
         {
             rightFlightDuration += Time.deltaTime;
-
-            if (!firstTime)
-            {
-                Vector3 currPosition = StateManager.rightFootPosition;
-                distance = Vector3.Distance(predictedRightFootPosition, currPosition);
-                firstTime = true;
-            }
         }
         else
         {
-            firstTime = false;
             previousFootprintRight = StateManager.rightFootPosition;
             rightFlightDuration = 0f;
         }
@@ -64,58 +56,64 @@ public class FeetPredictor
         {
             currentDirection = StateManager.currentDirectionModel;
         }
-        //if (currentDirection != Vector3.zero)
-        //{
-            Quaternion currentRotation = Quaternion.LookRotation(currentDirection);
-            var currentFlightTime = StateManager.currentFlightTime;
-            var currentVelocity = currentRotation * StateManager.currentVelocity;
-            //var currentVelocity = StateManager.currentVelocity * currentDirection;
-            var currentTime = Time.time;
-            var rightRemainingTime = currentFlightTime - rightFlightDuration;
-            var nextRightFootprintTime = currentTime + rightRemainingTime;
+        
+        Quaternion currentRotation = Quaternion.LookRotation(currentDirection);
+        var rightFlightTime = StateManager.currentFlightTime;
+        var leftFlightTime = StateManager.leftFlightTime;
+        
+        var currentVelocity = currentRotation * StateManager.currentVelocity;
+        //var currentVelocity = StateManager.currentVelocity * currentDirection;
+        var currentTime = Time.time;
+        
+        var rightRemainingTime = rightFlightTime - rightFlightDuration;
+        var leftRemainingTime = leftFlightTime - leftFlightDuration;
+        
+        var nextRightFootprintTime = currentTime + rightRemainingTime;
+        var nextLeftFootprintTime = currentTime + leftRemainingTime;
 
-            //test
-            //nextRightFootprintTime = (nextRightFootprintTime < currentTime) ? currentTime : nextRightFootprintTime;
-            nextRightFootTime = nextRightFootprintTime;
+        nextRightFootTime = nextRightFootprintTime;
 
-            var leftRemainingTime = currentFlightTime - leftFlightDuration;
-            var nextLeftFootprintTime = currentTime + leftRemainingTime;
+        Vector3 rightDis = currentRotation * StateManager.currentRightDis;
+        Vector3 leftDis = currentRotation * StateManager.currentLeftDis;
 
-            Vector3 rightDis = currentRotation * StateManager.currentRightDis;
-            Vector3 leftDis = currentRotation * StateManager.currentLeftDis;
+        predictedRootPositionRight = StateManager.currentPosition + (currentVelocity * (nextRightFootprintTime - currentTime));
+        predictedRootPositionLeft = StateManager.currentPosition + (currentVelocity * (nextLeftFootprintTime - currentTime));
 
-            predictedRootPositionRight = StateManager.currentPosition + (currentVelocity * (nextRightFootprintTime - currentTime));
-            predictedRootPositionLeft = StateManager.currentPosition + (currentVelocity * (nextLeftFootprintTime - currentTime));
+        //Test offset
+        Vector3 offset = currentRotation * new Vector3(0, 0, 0);
 
-            //Test offset
-            Vector3 offset = currentRotation * new Vector3(0, 0, 0);
+        //test physics
+        predictedRightFootPosition = predictedRootPositionRight + rightDis + offset;
+        predictedRightFootPosition = GetGroundPoint(predictedRightFootPosition);
+        
+        predictedLeftFootPosition = predictedRootPositionLeft + leftDis + offset;
+        predictedLeftFootPosition = GetGroundPoint(predictedLeftFootPosition);
 
-            //test physics
-            predictedRightFootPosition = predictedRootPositionRight + rightDis + offset;
-            predictedRightFootPosition = GetGroundPoint(predictedRightFootPosition);
+        var rightStride = StateManager.rightStride;
+        var leftStride = StateManager.leftStride;
+        
+        rightShadowPosition = predictedRightFootPosition - currentRotation * new Vector3(0, 0, rightStride);
+        leftShadowPosition = predictedLeftFootPosition - currentRotation * new Vector3(0, 0, leftStride);
 
-
-            //predictedLeftFootPosition = predictedRootPositionLeft + leftDis + offset;
-            //predictedLeftFootPosition = GetGroundPoint(predictedLeftFootPosition);
-
-
-            //rightShadowPosition = predictedRightFootPosition - currentRotation * new Vector3(0, 0, distance);
-
-        //}    
+        rightShadowPosition = GetGroundPoint(rightShadowPosition);
+        leftShadowPosition = GetGroundPoint(leftShadowPosition);
     }
 
-    private Vector3 GetGroundPoint(Vector3 predicredPosition)
+    private Vector3 GetGroundPoint(Vector3 predictedPosition)
     {
-        RaycastHit hit;
-        Vector3 groundPoint = Vector3.zero;
-        Vector3 skyPosition = predicredPosition + Vector3.up * 1.2f;
+        var groundPoint = Vector3.zero;
+        var skyPosition = predictedPosition + Vector3.up * 1.2f;
 
         Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 1.2f, Color.yellow);
-        if (Physics.Raycast(skyPosition, Vector3.down, out hit))
+        if (Physics.Raycast(skyPosition, Vector3.down, out var hit))
         {
             groundPoint = hit.point;
+            var rotAxis = Vector3.Cross(Vector3.up, hit.normal);
+            var angle = Vector3.Angle(Vector3.up, hit.normal);
+            var rotation = Quaternion.AngleAxis(angle, rotAxis);
+            predictedRightRotation = rotation;
         }
-
+        
         return groundPoint;
     }
 }

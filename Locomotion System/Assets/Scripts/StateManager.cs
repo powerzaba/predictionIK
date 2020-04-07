@@ -9,17 +9,24 @@ public static class StateManager
 
     public static bool rightFootGround = true;
     public static bool leftFootGround = true;
+    
     public static float rightPreviousVal = 1;
     public static float leftPreviousVal = 1;
 
     public static Vector3 rightFootPosition = Vector3.zero;
     public static Vector3 leftFootPosition = Vector3.zero;
+    
+    public static float rightStride;
+    public static float leftStride;
 
     public static Vector3 currentDirection = Vector3.zero;
     public static Vector3 currentPosition = Vector3.zero;
     public static Vector3 previousPosition = currentPosition;
 
     public static float currentFlightTime = 0f;
+    public static float rightFlightTime = 0f;
+    public static float leftFlightTime = 0f;
+    
     public static Vector3 currentRightDis = Vector3.zero;
     public static Vector3 currentLeftDis = Vector3.zero;
     public static Vector3 currentVelocity = Vector3.zero;
@@ -60,6 +67,9 @@ public static class StateManager
 
         var leftDisplacementX = animator.GetFloat("LeftDisplacementX");
         var leftDisplacementZ = animator.GetFloat("LeftDisplacementZ");
+        
+        rightStride = animator.GetFloat("RightStrideLength");
+        leftStride = animator.GetFloat("LeftStrideLength");
 
         foreach (var info in animator.GetCurrentAnimatorClipInfo(0))
         {            
@@ -67,6 +77,8 @@ public static class StateManager
         }
 
         currentFlightTime = rightFlight;
+        rightFlightTime = rightFlight;
+        leftFlightTime = leftFlight;
         currentRightDis = new Vector3(rightDisplacementX, 0, rightDisplacementZ);
         currentLeftDis = new Vector3(leftDisplacementX, 0, leftDisplacementZ);
         currentVelocity = velocity;
@@ -89,11 +101,21 @@ public static class StateManager
         if (rightValue == 1)
         {
             rightFootGround = true;
-        } 
+        }
+        
+        if (leftPreviousVal != 0 && leftValue == 0)
+        {
+            leftFootGround = false;
+        }
+        
+        if (leftValue == 1)
+        {
+            leftFootGround = true;
+        }
         
         
         // rightFootGround = (rightValue == 1) ? true : false;
-        leftFootGround = (leftValue == 1) ? true : false;
+        // leftFootGround = (leftValue == 1) ? true : false;
 
         rightPreviousVal = rightValue;
         leftPreviousVal = leftValue;

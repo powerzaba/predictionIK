@@ -180,8 +180,9 @@ public class LocomotionController : MonoBehaviour
         float rightOffsetPosition = rightFootIkPosition.y - model.transform.position.y;
 
         float totalOffset = (leftOffsetPosition < rightOffsetPosition) ? leftOffsetPosition : rightOffsetPosition;
-
-        Vector3 newPelvisPosition = animator.bodyPosition + Vector3.up * totalOffset/pelvisOffset;
+        
+        // Vector3 newPelvisPosition = animator.bodyPosition + Vector3.up * totalOffset/pelvisOffset;
+        Vector3 newPelvisPosition = animator.bodyPosition + Vector3.up * totalOffset;
         newPelvisPosition.y = Mathf.Lerp(lastPelvisPositionY, newPelvisPosition.y, pelvisUpAndDownSpeed);        
         animator.bodyPosition = newPelvisPosition;
         

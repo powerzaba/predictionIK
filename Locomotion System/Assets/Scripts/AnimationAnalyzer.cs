@@ -33,18 +33,17 @@ public class AnimationAnalyzer
         var rightPosInPlace = _sampler._rightFootPos.inPlacePosition;
         var leftPosInPlace = _sampler._leftFootPos.inPlacePosition;
 
-        if (_clip.name == "PIK_Capueira")
+        if (_clip.name == "PIK_Walk")
         {
-            Debug.Log("YOLO RIGHT/////////////");
+            Debug.Log("Right Foot now");
         }
-
         
         var rightData = GenerateFlightTimes(rightGroundTimes, rightPosInPlace, rightPos);
-        if (_clip.name == "PIK_Capueira")
+
+        if (_clip.name == "PIK_Walk")
         {
-            Debug.Log("YOLO LEFT/////////////");
+            Debug.Log("Left Foot now");
         }
-        
         
         var leftData = GenerateFlightTimes(leftGroundTimes, leftPosInPlace, leftPos);
 
@@ -109,6 +108,7 @@ public class AnimationAnalyzer
         List<float> flightList = new List<float>();
         List<float> xList = new List<float>();
         List<float> zList = new List<float>();
+        List<float> strideList = new List<float>();
 
         var endTime = _clip.length;
         float flightTime;
@@ -159,11 +159,13 @@ public class AnimationAnalyzer
                     flightList.Add(flightTime);
                     xList.Add(displacement.x);
                     zList.Add(displacement.z);
+                    strideList.Add(strideLength);
 
-                    //FillArray(ref flightTimes, flightTime, liftIndex, strikeIndex);     
-                    //FillArray(ref x, displacement.x, liftIndex, strikeIndex);
-                    //FillArray(ref z, displacement.z, liftIndex, strikeIndex);
-                    FillArray(ref s, strideLength, liftIndex, strikeIndex);
+                    if (_clip.name == "PIK_Walk")
+                    {
+                        Debug.Log(displacement.z);
+                    }
+                    
                 }
             }
         }
@@ -175,20 +177,12 @@ public class AnimationAnalyzer
             var currentStrike = strikeList[i];
             var currentX = xList[i];
             var currentZ = zList[i];
+            var strideLength = strideList[i];
             FillArray(ref x, currentX, prevStrike, currentStrike);
             FillArray(ref z, currentZ, prevStrike, currentStrike);
             FillArray(ref flightTimes, currentFlight, prevStrike, currentStrike);
+            FillArray(ref s, strideLength, prevStrike, currentStrike);
         }
-        
-        //test
-        if (_clip.name == "PIK_Capueira")
-        {
-            foreach (var a in flightTimes)
-            {
-                Debug.Log(a);
-            }
-        }
-        
         
         if (isIdle)
         {
