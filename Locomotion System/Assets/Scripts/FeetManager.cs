@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,13 +24,22 @@ public class FeetManager : MonoBehaviour
     [SerializeField] private LayerMask environmentLayer;
     //test feet height
     [Range (0, 1f)]
-    [SerializeField] private float feetHeight;
+    [SerializeField] private float feetHeight = 0;
     
     [Range (0, 1f)]
-    [SerializeField] private float followCurveTh;
+    [SerializeField] private float followCurveTh = 0.02f;
+    
+    [Range (0, 1f)]
+    [SerializeField] private float TH = 0.02f;
 
     private Quaternion rightRotationIK;
     private Quaternion leftRotationIK;
+
+    private Vector3 rightPositionIK;
+    private Vector3 leftPositionIK;
+
+    private bool firstTime = true;
+    private float time;
 
     void Start()
     {
@@ -55,21 +65,35 @@ public class FeetManager : MonoBehaviour
         StateManager.UpdateModelDirection(_model);
         _predictor.UpdateState();
         _predictor.PredictFeetPosition();
+        var currentRight = StateManager.rightFootPosition;
+        var currentLeft = StateManager.leftFootPosition;
+
+        //MovePelvisHeight(currentRight, currentLeft);
+
         
         //TODO: currently doing the boxcasting just for the right foot
         var rightFrom = _predictor.rightShadowPosition;
         var rightTo = _predictor.predictedRightFootPosition;
+        rightFrom.y += feetHeight;
+        rightTo.y += feetHeight;
         
         var leftFrom = _predictor.leftShadowPosition;
         var leftTo = _predictor.predictedLeftFootPosition;
+        leftFrom.y += feetHeight;
+        leftTo.y += feetHeight;
 
         _feetController.CreateBoxCast(rightFrom, rightTo);
-        _leftFeetController.CreateBoxCast(leftFrom, leftTo);
-        
-        _feetController.GetProjectionOnCurve(HumanBodyBones.RightFoot);
-        _leftFeetController.GetProjectionOnCurve(HumanBodyBones.LeftFoot);
+        _feetController.CreateBoxCast(rightFrom, rightTo);    
 
-        var currentRight = Vector3.zero;
+        
+        _leftFeetController.CreateBoxCast(leftFrom, leftTo);
+
+        _feetController.GetProjectionOnCurve(HumanBodyBones.RightFoot, currentRight);
+        _leftFeetController.GetProjectionOnCurve(HumanBodyBones.LeftFoot, currentLeft);
+        
+        rightPositionIK = GetGroundPoint(currentRight, true);
+        leftPositionIK = GetGroundPoint(currentLeft, false);
+        
         //TODO: test for curve following for feet
         if (!StateManager.rightFootGround)
         {
@@ -78,32 +102,27 @@ public class FeetManager : MonoBehaviour
             
             //check how similar the two altitude need to be, so that the 
             //curve doesn't get followed while on flat surface
+            var diff = currentRight.y - currentLeft.y;
             if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _feetController.midPointHit)
             {
-                _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, ref prevRightPosY);
-                currentRight = _feetController.newGlobalPosition;
+                _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, currentRight);
             }
-            else
-            {
-                currentRight = _animator.GetBoneTransform(HumanBodyBones.RightFoot).position;
-            }
+            
+            //test interpolate quaternion
+            var lerpTime = StateManager.rightFlightTime;
+            //var result = Quaternion.Lerp(currentRot, _predictor.predictedRightRotation, time / lerpTime);
+            _animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, _predictor.rightFlightDuration/lerpTime);
+            _animator.SetIKRotation(AvatarIKGoal.RightFoot, _predictor.predictedRightRotation * _animator.GetIKRotation(AvatarIKGoal.RightFoot));
         }
         else
         {
-            currentRight = _animator.GetBoneTransform(HumanBodyBones.RightFoot).position;
-            var correctPosition = GetGroundPoint(currentRight);
-            currentRight.y = correctPosition.y;
-            
-            MoveFeetToIkPoint(AvatarIKGoal.RightFoot, correctPosition, rightRotationIK, ref prevRightPos.y);
-            
-            // _animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);
-            // _animator.SetIKPosition(AvatarIKGoal.RightFoot, currentRight);
-            //
-            // _animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
-            // _animator.SetIKRotation(AvatarIKGoal.RightFoot, rightRotationIK * _animator.GetIKRotation(AvatarIKGoal.RightFoot));
+            // MoveFeetToIkPoint(AvatarIKGoal.RightFoot, rightPositionIK, rightRotationIK, ref prevRightPos.y);
+            _animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);
+            _animator.SetIKPosition(AvatarIKGoal.RightFoot, rightPositionIK);
+            _animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
+            _animator.SetIKRotation(AvatarIKGoal.RightFoot, rightRotationIK * _animator.GetIKRotation(AvatarIKGoal.RightFoot));
         }
         
-        var currentLeft = Vector3.zero;
         //TODO: test for curve following for feet
         if (!StateManager.leftFootGround)
         {
@@ -114,30 +133,27 @@ public class FeetManager : MonoBehaviour
             //curve doesn't get followed while on flat surface
             if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _leftFeetController.midPointHit)
             {
-                _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, ref prevLeftPosY);
-                currentLeft = _leftFeetController.newGlobalPosition;
+                _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, currentLeft);
             }
-            else
-            {
-                currentLeft = _animator.GetBoneTransform(HumanBodyBones.LeftFoot).position;
-            }
+            
+            //test interpolate quaternion
+            var lerpTime = StateManager.leftFlightTime;
+            //var result = Quaternion.Lerp(currentRot, _predictor.predictedRightRotation, time / lerpTime);
+            _animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, _predictor.leftFlightDuration/lerpTime);
+            _animator.SetIKRotation(AvatarIKGoal.LeftFoot, _predictor.predictedLeftRotation * _animator.GetIKRotation(AvatarIKGoal.LeftFoot));
         }
         else
         {
-            currentLeft = _animator.GetBoneTransform(HumanBodyBones.LeftFoot).position;
-            var correctPosition = GetGroundPoint(currentLeft);
-            currentLeft.y = correctPosition.y;
-            
-            MoveFeetToIkPoint(AvatarIKGoal.LeftFoot, correctPosition, leftRotationIK, ref prevLeftPos.y);
-            
-            // _animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
-            // _animator.SetIKPosition(AvatarIKGoal.LeftFoot, currentLeft);
+            //MoveFeetToIkPoint(AvatarIKGoal.LeftFoot, correctPosition, leftRotationIK, ref prevLeftPos.y);
+            _animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
+            _animator.SetIKPosition(AvatarIKGoal.LeftFoot, leftPositionIK);
+            _animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
+            _animator.SetIKRotation(AvatarIKGoal.LeftFoot, leftRotationIK * _animator.GetIKRotation(AvatarIKGoal.LeftFoot));
         }
-
-        MovePelvisHeight(currentRight, currentLeft);
         
-        prevRightPos = currentRight;
-        prevLeftPos = currentLeft;
+        
+        //prevRightPos = currentRight;
+        //prevLeftPos = currentLeft;
     }
     
     void MoveFeetToIkPoint(AvatarIKGoal foot, Vector3 positionIkHolder, Quaternion rotationIkHolder, ref float lastFootPositionY) {
@@ -147,42 +163,42 @@ public class FeetManager : MonoBehaviour
             targetIkPosition = this.gameObject.transform.InverseTransformPoint(targetIkPosition);
             positionIkHolder = this.gameObject.transform.InverseTransformPoint(positionIkHolder);
 
-            var yVariable = Mathf.Lerp(lastFootPositionY, positionIkHolder.y, 0.8f); //speed feet to IK
+            var yVariable = Mathf.Lerp(lastFootPositionY, positionIkHolder.y, 0.2f); //speed feet to IK
             targetIkPosition.y += yVariable;
             lastFootPositionY = yVariable;
 
             targetIkPosition = this.gameObject.transform.TransformPoint(targetIkPosition);
-            _animator.SetIKRotation(foot, rotationIkHolder * _animator.GetIKRotation(foot));
+            //_animator.SetIKRotation(foot, rotationIkHolder * _animator.GetIKRotation(foot));
         }
         _animator.SetIKPosition(foot, targetIkPosition);
     }
-    
+
     private void MovePelvisHeight(Vector3 right, Vector3 left) {
 
-        if (right == Vector3.zero || left == Vector3.zero || prevHipY == 0.0f) {
-            prevHipY = _animator.bodyPosition.y - 0.2f;
-            Debug.Log(prevHipY);
+        if (right == Vector3.zero || left == Vector3.zero || Math.Abs(prevHipY) < 0.05f) {
+            prevHipY = _animator.bodyPosition.y;
             return;
         }
-
-        float leftOffsetPosition = left.y - this.gameObject.transform.position.y;
-        float rightOffsetPosition = right.y - this.gameObject.transform.position.y;
-
-        float totalOffset = (leftOffsetPosition < rightOffsetPosition) ? leftOffsetPosition : rightOffsetPosition;
         
-        // Vector3 newPelvisPosition = animator.bodyPosition + Vector3.up * totalOffset/pelvisOffset;
-        Vector3 newPelvisPosition = _animator.bodyPosition + Vector3.up * totalOffset;
-        newPelvisPosition.y = Mathf.Lerp(prevHipY, newPelvisPosition.y, 0.4f);        
+        var position = this.gameObject.transform.position;
+        var leftOffsetPosition = left.y - position.y;
+        var rightOffsetPosition = right.y - position.y;
+        
+        var totalOffset = (leftOffsetPosition < rightOffsetPosition) ? leftOffsetPosition : rightOffsetPosition;
+        var newPelvisPosition = _animator.bodyPosition + Vector3.up * totalOffset;
+        newPelvisPosition.y = Mathf.Lerp(prevHipY, newPelvisPosition.y, 0.4f) - TH;        
         _animator.bodyPosition = newPelvisPosition;
         
         prevHipY = _animator.bodyPosition.y;
+        
     }
     
-    private Vector3 GetGroundPoint(Vector3 predictedPosition)
+    private Vector3 GetGroundPoint(Vector3 predictedPosition, bool right)
     {
         RaycastHit hit;
         var groundPoint = Vector3.zero;
         var skyPosition = predictedPosition + Vector3.up * 1.2f;
+        Debug.Log(skyPosition);
 
         Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 2f, Color.magenta);
         if (Physics.Raycast(skyPosition, Vector3.down, out hit, 2f, environmentLayer))
@@ -190,19 +206,21 @@ public class FeetManager : MonoBehaviour
             
             groundPoint = hit.point;
             groundPoint.y += feetHeight;
-            if (groundPoint.y > 1)
-            {
-                Debug.Log("YOLO");    
-            }
             
             //test rotation all the time like old system
             var rotAxis = Vector3.Cross(Vector3.up, hit.normal);
             var angle = Vector3.Angle(Vector3.up, hit.normal);
             var rotation = Quaternion.AngleAxis(angle, rotAxis);
-            rightRotationIK = rotation;
-            
+            if (right)
+            {
+                rightRotationIK = rotation;
+            }
+            else
+            {
+                leftRotationIK = rotation;
+            }
         }
-
+        
         return groundPoint;
     }
 

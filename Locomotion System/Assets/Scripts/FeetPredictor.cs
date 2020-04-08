@@ -11,7 +11,7 @@ public class FeetPredictor
     public Vector3 predictedRootPositionLeft { get; private set; }
 
     public float rightFlightDuration = 0f;
-    private float leftFlightDuration = 0f;
+    public float leftFlightDuration = 0f;
 
     public float nextRightFootTime;
     
@@ -20,6 +20,7 @@ public class FeetPredictor
     
     //test predicted rotation
     public Quaternion predictedRightRotation { get; private set; }
+    public Quaternion predictedLeftRotation { get; private set; }
 
     public FeetPredictor(Animator animator)
     {
@@ -51,18 +52,18 @@ public class FeetPredictor
 
     public void PredictFeetPosition()
     {
-        var currentDirection = StateManager.currentDirectionModel;
+        var currentDirection = StateManager.currentDirection;
         if (currentDirection == Vector3.zero)
         {
-            currentDirection = StateManager.currentDirectionModel;
+            currentDirection = StateManager.currentDirection;
         }
         
         Quaternion currentRotation = Quaternion.LookRotation(currentDirection);
         var rightFlightTime = StateManager.currentFlightTime;
         var leftFlightTime = StateManager.leftFlightTime;
         
-        var currentVelocity = currentRotation * StateManager.currentVelocity;
-        //var currentVelocity = StateManager.currentVelocity * currentDirection;
+        //var currentVelocity = currentRotation * StateManager.currentVelocity;
+        var currentVelocity = StateManager.currentVelocity * currentDirection;
         var currentTime = Time.time;
         
         var rightRemainingTime = rightFlightTime - rightFlightDuration;
@@ -84,10 +85,10 @@ public class FeetPredictor
 
         //test physics
         predictedRightFootPosition = predictedRootPositionRight + rightDis + offset;
-        predictedRightFootPosition = GetGroundPoint(predictedRightFootPosition);
+        predictedRightFootPosition = GetGroundPoint(predictedRightFootPosition, true);
         
         predictedLeftFootPosition = predictedRootPositionLeft + leftDis + offset;
-        predictedLeftFootPosition = GetGroundPoint(predictedLeftFootPosition);
+        predictedLeftFootPosition = GetGroundPoint(predictedLeftFootPosition, false);
 
         var rightStride = StateManager.rightStride;
         var leftStride = StateManager.leftStride;
@@ -95,11 +96,11 @@ public class FeetPredictor
         rightShadowPosition = predictedRightFootPosition - currentRotation * new Vector3(0, 0, rightStride);
         leftShadowPosition = predictedLeftFootPosition - currentRotation * new Vector3(0, 0, leftStride);
 
-        rightShadowPosition = GetGroundPoint(rightShadowPosition);
-        leftShadowPosition = GetGroundPoint(leftShadowPosition);
+        rightShadowPosition = GroundPoint(rightShadowPosition);
+        leftShadowPosition = GroundPoint(leftShadowPosition);
     }
 
-    private Vector3 GetGroundPoint(Vector3 predictedPosition)
+    private Vector3 GetGroundPoint(Vector3 predictedPosition, bool right)
     {
         var groundPoint = Vector3.zero;
         var skyPosition = predictedPosition + Vector3.up * 1.2f;
@@ -111,7 +112,30 @@ public class FeetPredictor
             var rotAxis = Vector3.Cross(Vector3.up, hit.normal);
             var angle = Vector3.Angle(Vector3.up, hit.normal);
             var rotation = Quaternion.AngleAxis(angle, rotAxis);
-            predictedRightRotation = rotation;
+            if (right)
+            {
+                predictedRightRotation = rotation;
+
+            }
+            else
+            {
+                predictedLeftRotation = rotation;
+            }
+            
+        }
+        
+        return groundPoint;
+    }
+    
+    private Vector3 GroundPoint(Vector3 predictedPosition)
+    {
+        var groundPoint = Vector3.zero;
+        var skyPosition = predictedPosition + Vector3.up * 1.2f;
+
+        Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 1.2f, Color.yellow);
+        if (Physics.Raycast(skyPosition, Vector3.down, out var hit))
+        {
+            groundPoint = hit.point;
         }
         
         return groundPoint;

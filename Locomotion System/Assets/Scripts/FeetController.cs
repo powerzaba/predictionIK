@@ -67,7 +67,7 @@ public class FeetController
 
             _midPoint = (to + from) / 2;
             //TODO: remember this number 0.05
-            _midPoint = _midPoint + rotation * Vector3.up * 0.2f;
+            _midPoint = _midPoint + rotation * Vector3.up * 0.05f;
             _midPoint = matrix.inverse.MultiplyPoint3x4(_midPoint);
         
             _localTargetPosition = matrix.inverse.MultiplyPoint3x4(to);
@@ -112,21 +112,19 @@ public class FeetController
         return curve;
     }
 
-    public void GetProjectionOnCurve(HumanBodyBones foot)
+    public void GetProjectionOnCurve(HumanBodyBones foot, Vector3 position)
     {
-        var globalFootPosition = _animator.GetBoneTransform(foot).position;
-        localFootProjection = matrix.inverse.MultiplyPoint3x4(globalFootPosition);
+        localFootProjection = matrix.inverse.MultiplyPoint3x4(position);
         localFootProjection.x = 0f;
         localFootProjection.y = 0f;
     }
 
-    public void MoveFeetAlongCurve(HumanBodyBones foot, AvatarIKGoal goal, ref float prevPositionY)
+    public void MoveFeetAlongCurve(HumanBodyBones foot, AvatarIKGoal goal, Vector3 currentPosition)
     {
-        var currentGlobalPosition = _animator.GetBoneTransform(foot).position;
         var newYlocalValue = (float)_curve.Interpolate(localFootProjection.z);
         var newYGlobalValues = matrix.MultiplyPoint3x4(new Vector3(0, newYlocalValue, localFootProjection.z));
-        newGlobalPosition = currentGlobalPosition;
-        float yVar = Mathf.Lerp(currentGlobalPosition.y, newYGlobalValues.y, 0.5f);
+        newGlobalPosition = currentPosition;
+        float yVar = Mathf.Lerp(currentPosition.y, newYGlobalValues.y, 0.5f);
         newGlobalPosition.y = newYGlobalValues.y;
         _animator.SetIKPositionWeight(goal, 1);
         _animator.SetIKPosition(goal, newGlobalPosition);

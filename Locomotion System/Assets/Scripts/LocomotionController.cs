@@ -129,22 +129,22 @@ public class LocomotionController : MonoBehaviour
             MovePelvisHeight();
 
             //right foot ik position and rotation -- utilise pro feature
-            animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);            
-            
-            if (useIkFeature) {
-                animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
-            }
-
-            MoveFeetToIkPoint(AvatarIKGoal.RightFoot, rightFootIkPosition, rightFootIkRotation, ref lastRightFootPositionY);
-
-            //left foot ik position and rotation -- utilise pro feature
-            animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
-           
-            if (useIkFeature) {
-                animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
-            }
-
-            MoveFeetToIkPoint(AvatarIKGoal.LeftFoot, leftFootIkPosition, leftFootIkRotation, ref lastLeftFootPositionY);                        
+            // animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);            
+            //
+            // if (useIkFeature) {
+            //     animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
+            // }
+            //
+            // MoveFeetToIkPoint(AvatarIKGoal.RightFoot, rightFootIkPosition, rightFootIkRotation, ref lastRightFootPositionY);
+            //
+            // //left foot ik position and rotation -- utilise pro feature
+            // animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
+            //
+            // if (useIkFeature) {
+            //     animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
+            // }
+            //
+            // MoveFeetToIkPoint(AvatarIKGoal.LeftFoot, leftFootIkPosition, leftFootIkRotation, ref lastLeftFootPositionY);                        
         }
     }
 
@@ -190,28 +190,21 @@ public class LocomotionController : MonoBehaviour
     }
 
     private void FeetPositionSolver(Vector3 fromSkyPosition, ref Vector3 feetIkPositions, ref Quaternion feetIkRotations) {
-        //raycast handling section 
-        RaycastHit feetOutHit;
-
         if (showSolverDebug)
             Debug.DrawLine(fromSkyPosition, fromSkyPosition + Vector3.down * (raycastDownDistance + heightFromGroundRaycast), Color.yellow);
 
-        if (Physics.Raycast(fromSkyPosition, Vector3.down, out feetOutHit, raycastDownDistance + heightFromGroundRaycast, environmentLayer)) {
+        if (Physics.Raycast(fromSkyPosition, Vector3.down, out var feetOutHit, raycastDownDistance + heightFromGroundRaycast, environmentLayer)) {
             //finding our feet ik positions from the sky position
-            //feetIkPositions = fromSkyPosition;
-            //feetIkPositions.y = feetOutHit.point.y + pelvisOffset;
-            Vector3 rotAxis = Vector3.Cross(Vector3.up, feetOutHit.normal);
-            float angle = Vector3.Angle(Vector3.up, feetOutHit.normal);
-            Quaternion rot = Quaternion.AngleAxis(angle, rotAxis);
+            var rotAxis = Vector3.Cross(Vector3.up, feetOutHit.normal);
+            var angle = Vector3.Angle(Vector3.up, feetOutHit.normal);
+            var rot = Quaternion.AngleAxis(angle, rotAxis);
             feetIkPositions = feetOutHit.point;
-            //feetIkRotations = Quaternion.FromToRotation(Vector3.up, feetOutHit.normal);
             feetIkRotations = rot;
 
             return;
         }
 
-        feetIkPositions = Vector3.zero; //it didn't work :(
-
+        feetIkPositions = Vector3.zero;
     }
 
     private void AdjustFeetTarget(ref Vector3 feetPositions, HumanBodyBones foot) {
