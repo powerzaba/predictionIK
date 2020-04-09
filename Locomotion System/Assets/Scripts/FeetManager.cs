@@ -31,6 +31,12 @@ public class FeetManager : MonoBehaviour
     
     [Range (0, 1f)]
     [SerializeField] private float TH = 0.02f;
+    
+    [Range (0, 1f)]
+    [SerializeField] private float midPointHeight = 0.01f;
+    
+    [Range (0, 1f)]
+    [SerializeField] private float curveHeightTh = 0.01f;
 
     private Quaternion rightRotationIK;
     private Quaternion leftRotationIK;
@@ -82,11 +88,8 @@ public class FeetManager : MonoBehaviour
         leftFrom.y += feetHeight;
         leftTo.y += feetHeight;
 
-        _feetController.CreateBoxCast(rightFrom, rightTo);
-        _feetController.CreateBoxCast(rightFrom, rightTo);    
-
-        
-        _leftFeetController.CreateBoxCast(leftFrom, leftTo);
+        _feetController.CreateBoxCast(rightFrom, rightTo, midPointHeight, curveHeightTh);
+        _leftFeetController.CreateBoxCast(leftFrom, leftTo, midPointHeight, curveHeightTh);
 
         _feetController.GetProjectionOnCurve(HumanBodyBones.RightFoot, currentRight);
         _leftFeetController.GetProjectionOnCurve(HumanBodyBones.LeftFoot, currentLeft);
@@ -198,7 +201,6 @@ public class FeetManager : MonoBehaviour
         RaycastHit hit;
         var groundPoint = Vector3.zero;
         var skyPosition = predictedPosition + Vector3.up * 1.2f;
-        Debug.Log(skyPosition);
 
         Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 2f, Color.magenta);
         if (Physics.Raycast(skyPosition, Vector3.down, out hit, 2f, environmentLayer))

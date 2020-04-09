@@ -131,9 +131,11 @@ public class FeetPredictor
     {
         var groundPoint = Vector3.zero;
         var skyPosition = predictedPosition + Vector3.up * 1.2f;
-
+        
+        LayerMask mask = LayerMask.GetMask("Default");
+        
         Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 1.2f, Color.yellow);
-        if (Physics.Raycast(skyPosition, Vector3.down, out var hit))
+        if (Physics.Raycast(skyPosition, Vector3.down, out var hit, 2f, mask))
         {
             groundPoint = hit.point;
         }

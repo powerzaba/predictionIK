@@ -123,8 +123,7 @@ public static class StateManager
 
     public static void UpdateDirectionAndVelocity(Animator animator)
     {
-        // currentPosition = animator.bodyPosition;
-        currentPosition =;
+        currentPosition = animator.bodyPosition;
         
         //TODO: CHECK THIS
         currentPosition.y = 0f;

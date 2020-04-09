@@ -31,14 +31,14 @@ public class FeetController
     //test pos
     public Vector3 newGlobalPosition;
     public bool midPointHit = false;
-
+    
     
     public FeetController(Animator animator)
     {
         _animator = animator;
     }
     
-    public void CreateBoxCast(Vector3 from, Vector3 to)
+    public void CreateBoxCast(Vector3 from, Vector3 to, float midPointHeight, float heightTh)
     {
         if (from != to)
         {
@@ -47,7 +47,7 @@ public class FeetController
             
             rotation = Quaternion.LookRotation(relativePosition, Vector3.up);
             matrix = Matrix4x4.TRS(from, rotation, Vector3.one);
-            center = matrix.MultiplyPoint3x4(new Vector3(0, 0.5f, distanceHalf));
+            center = matrix.MultiplyPoint3x4(new Vector3(0, 1f, distanceHalf));
             half = new Vector3(0.1f, 0.1f, distanceHalf);
             localUp = rotation * Vector3.up;
             hit = Physics.BoxCastAll(center, half,-localUp, rotation);
@@ -67,7 +67,7 @@ public class FeetController
 
             _midPoint = (to + from) / 2;
             //TODO: remember this number 0.05
-            _midPoint = _midPoint + rotation * Vector3.up * 0.05f;
+            _midPoint = _midPoint + rotation * Vector3.up * midPointHeight;
             _midPoint = matrix.inverse.MultiplyPoint3x4(_midPoint);
         
             _localTargetPosition = matrix.inverse.MultiplyPoint3x4(to);
@@ -94,7 +94,6 @@ public class FeetController
             _inputX[2] = _localTargetPosition.z;
 
 
-            var heightTh = 0.1f;
             _inputY[0] = 0;
             _inputY[1] = _midPoint.y + heightTh;
             _inputY[2] = _localTargetPosition.y;

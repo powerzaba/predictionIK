@@ -29,7 +29,8 @@ public class LocomotionController : MonoBehaviour
 
     public bool useIkFeature = false;
     public bool showSolverDebug = true;
-
+    public bool oldSystem = false;
+    
     //TODO: change this to private/protected provide accessories
     public float speed = 0.0f;
     public float dampTime = 0.1f;
@@ -73,7 +74,7 @@ public class LocomotionController : MonoBehaviour
         //    speed = 0;
         //}
         //TODO FIX ANIMATOR STOP CONDITION
-        speed = 0.5f;
+        speed = 1f;
         animator.SetFloat("Speed", speed, dampTime, Time.deltaTime);
         Vector3 moveX = Camera.main.transform.right * inputX;
         Vector3 moveZ = Camera.main.transform.forward * inputZ;
@@ -128,23 +129,27 @@ public class LocomotionController : MonoBehaviour
 
             MovePelvisHeight();
 
-            //right foot ik position and rotation -- utilise pro feature
-            // animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);            
-            //
-            // if (useIkFeature) {
-            //     animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
-            // }
-            //
-            // MoveFeetToIkPoint(AvatarIKGoal.RightFoot, rightFootIkPosition, rightFootIkRotation, ref lastRightFootPositionY);
-            //
-            // //left foot ik position and rotation -- utilise pro feature
-            // animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
-            //
-            // if (useIkFeature) {
-            //     animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
-            // }
-            //
-            // MoveFeetToIkPoint(AvatarIKGoal.LeftFoot, leftFootIkPosition, leftFootIkRotation, ref lastLeftFootPositionY);                        
+            if (oldSystem)
+            {
+                //right foot ik position and rotation -- utilise pro feature
+                animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);            
+                
+                if (useIkFeature) {
+                    animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
+                }
+                
+                MoveFeetToIkPoint(AvatarIKGoal.RightFoot, rightFootIkPosition, rightFootIkRotation, ref lastRightFootPositionY);
+                
+                // //left foot ik position and rotation -- utilise pro feature
+                animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
+                
+                if (useIkFeature) {
+                    animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
+                }
+                
+                MoveFeetToIkPoint(AvatarIKGoal.LeftFoot, leftFootIkPosition, leftFootIkRotation, ref lastLeftFootPositionY);         
+            }
+                               
         }
     }
 
