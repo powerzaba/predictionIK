@@ -38,7 +38,7 @@ public class FeetController
         _animator = animator;
     }
     
-    public void CreateBoxCast(Vector3 from, Vector3 to, float midPointHeight, float heightTh)
+    public void CreateBoxCast(Vector3 from, Vector3 to, float midPointHeight, float heightTh, float curveTh)
     {
         if (from != to)
         {
@@ -75,7 +75,7 @@ public class FeetController
             if (hit[0].point != Vector3.zero)
             {
                 _localMidPosition = matrix.inverse.MultiplyPoint3x4(hit[0].point);
-                if (Math.Abs(_localMidPosition.z - _localTargetPosition.z) > 0.15)
+                if (Math.Abs(_localMidPosition.z - _localTargetPosition.z) > curveTh)
                 {
                     if (_localMidPosition.y > _midPoint.y)
                     {
@@ -118,13 +118,16 @@ public class FeetController
         localFootProjection.y = 0f;
     }
 
-    public void MoveFeetAlongCurve(HumanBodyBones foot, AvatarIKGoal goal, Vector3 currentPosition)
+    public void MoveFeetAlongCurve(HumanBodyBones foot, AvatarIKGoal goal, Vector3 currentPosition, float speed)
     {
+        var step = speed * Time.deltaTime;
         var newYlocalValue = (float)_curve.Interpolate(localFootProjection.z);
-        var newYGlobalValues = matrix.MultiplyPoint3x4(new Vector3(0, newYlocalValue, localFootProjection.z));
-        newGlobalPosition = currentPosition;
-        float yVar = Mathf.Lerp(currentPosition.y, newYGlobalValues.y, 0.5f);
-        newGlobalPosition.y = newYGlobalValues.y;
+        newGlobalPosition = matrix.MultiplyPoint3x4(new Vector3(0, newYlocalValue, localFootProjection.z));
+        // newGlobalPosition = currentPosition;
+        // // float yVar = Mathf.Lerp(currentPosition.y, newYGlobalValues.y, 0.5f);
+        var yVar = Mathf.MoveTowards(currentPosition.y, newGlobalPosition.y, step);
+        // newGlobalPosition.y = newYGlobalValues.y;
+        newGlobalPosition.y = yVar;
         _animator.SetIKPositionWeight(goal, 1);
         _animator.SetIKPosition(goal, newGlobalPosition);
         

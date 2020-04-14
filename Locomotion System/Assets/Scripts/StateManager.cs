@@ -113,10 +113,6 @@ public static class StateManager
             leftFootGround = true;
         }
         
-        
-        // rightFootGround = (rightValue == 1) ? true : false;
-        // leftFootGround = (leftValue == 1) ? true : false;
-
         rightPreviousVal = rightValue;
         leftPreviousVal = leftValue;
     }
@@ -124,16 +120,30 @@ public static class StateManager
     public static void UpdateDirectionAndVelocity(Animator animator)
     {
         currentPosition = animator.bodyPosition;
-        
-        //TODO: CHECK THIS
-        currentPosition.y = 0f;
+        currentPosition.y = GroundPoint(currentPosition).y;
+        // currentPosition.y = 0;
         currentVelocity = Vector3.Distance(previousPosition, currentPosition) / Time.deltaTime;
         Vector3 diff = (currentPosition - previousPosition).normalized;
 
         currentDirection = diff;
         previousPosition = currentPosition;
     }   
-
+    
+    private static Vector3 GroundPoint(Vector3 predictedPosition)
+    {
+        var groundPoint = Vector3.zero;
+        LayerMask mask = LayerMask.GetMask("Default");
+        
+        Debug.DrawLine(predictedPosition, predictedPosition + Vector3.down * 2f, Color.yellow);
+        if (Physics.Raycast(predictedPosition, Vector3.down, out var hit, 2f, mask))
+        {
+            Debug.Log("HIIIT");
+            groundPoint = hit.point;
+        }
+        
+        return groundPoint;
+    }
+    
     public static void UpdateModelDirection(GameObject model)
     {
         currentDirectionModel = model.transform.forward;

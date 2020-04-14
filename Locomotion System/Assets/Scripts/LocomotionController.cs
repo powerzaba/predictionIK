@@ -43,6 +43,7 @@ public class LocomotionController : MonoBehaviour
     //gravity stuff
     public float gravity = 9.8f;
     public float fallingSpeed = 5f;
+    public bool lockSpeed = true;
 
     #endregion 
 
@@ -74,7 +75,10 @@ public class LocomotionController : MonoBehaviour
         //    speed = 0;
         //}
         //TODO FIX ANIMATOR STOP CONDITION
-        speed = 1f;
+        if (lockSpeed)
+        {
+            speed = 1f;    
+        }
         animator.SetFloat("Speed", speed, dampTime, Time.deltaTime);
         Vector3 moveX = Camera.main.transform.right * inputX;
         Vector3 moveZ = Camera.main.transform.forward * inputZ;
@@ -97,8 +101,10 @@ public class LocomotionController : MonoBehaviour
         lastRotation = transform.rotation;
     }
    
+    /*
     #region FeetGrounding
-
+    
+    
     /// <summary>
     /// Updating the target for the feet and adjusting their positions.
     /// </summary>
@@ -119,7 +125,8 @@ public class LocomotionController : MonoBehaviour
 
         }
     }
-
+    
+    
     private void OnAnimatorIK(int layerIndex) {       
         if (enableFeetIk) {
 
@@ -152,28 +159,7 @@ public class LocomotionController : MonoBehaviour
                                
         }
     }
-
-    #endregion
-
-    #region FeetGroundingMethods
-
-    void MoveFeetToIkPoint(AvatarIKGoal foot, Vector3 positionIkHolder, Quaternion rotationIkHolder, ref float lastFootPositionY) {
-        Vector3 targetIkPosition = animator.GetIKPosition(foot);
-
-        if (positionIkHolder != Vector3.zero) {
-            targetIkPosition = model.transform.InverseTransformPoint(targetIkPosition);
-            positionIkHolder = model.transform.InverseTransformPoint(positionIkHolder);
-
-            float yVariable = Mathf.Lerp(lastFootPositionY, positionIkHolder.y, feetToIkPositionSpeed);
-            targetIkPosition.y += yVariable;
-            lastFootPositionY = yVariable;
-
-            targetIkPosition = model.transform.TransformPoint(targetIkPosition);
-            animator.SetIKRotation(foot, rotationIkHolder * animator.GetIKRotation(foot));
-        }
-        animator.SetIKPosition(foot, targetIkPosition);
-    }
-
+    
     private void MovePelvisHeight() {
 
         if (rightFootIkPosition == Vector3.zero || leftFootIkPosition == Vector3.zero || lastPelvisPositionY == 0.0f) {
@@ -194,6 +180,28 @@ public class LocomotionController : MonoBehaviour
         lastPelvisPositionY = animator.bodyPosition.y;
     }
 
+    #endregion
+    
+    
+    #region FeetGroundingMethods
+
+    void MoveFeetToIkPoint(AvatarIKGoal foot, Vector3 positionIkHolder, Quaternion rotationIkHolder, ref float lastFootPositionY) {
+        Vector3 targetIkPosition = animator.GetIKPosition(foot);
+
+        if (positionIkHolder != Vector3.zero) {
+            targetIkPosition = model.transform.InverseTransformPoint(targetIkPosition);
+            positionIkHolder = model.transform.InverseTransformPoint(positionIkHolder);
+
+            float yVariable = Mathf.Lerp(lastFootPositionY, positionIkHolder.y, feetToIkPositionSpeed);
+            targetIkPosition.y += yVariable;
+            lastFootPositionY = yVariable;
+
+            targetIkPosition = model.transform.TransformPoint(targetIkPosition);
+            animator.SetIKRotation(foot, rotationIkHolder * animator.GetIKRotation(foot));
+        }
+        animator.SetIKPosition(foot, targetIkPosition);
+    }
+   
     private void FeetPositionSolver(Vector3 fromSkyPosition, ref Vector3 feetIkPositions, ref Quaternion feetIkRotations) {
         if (showSolverDebug)
             Debug.DrawLine(fromSkyPosition, fromSkyPosition + Vector3.down * (raycastDownDistance + heightFromGroundRaycast), Color.yellow);
@@ -221,4 +229,5 @@ public class LocomotionController : MonoBehaviour
     }
 
     #endregion
+    */
 }

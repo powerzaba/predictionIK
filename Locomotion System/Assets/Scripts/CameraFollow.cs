@@ -28,6 +28,7 @@ public class CameraFollow : MonoBehaviour
     private Vector3 position = Vector3.zero;
     private Vector3 desiredPosition = Vector3.zero;
     private float desiredDistance = 0f;
+    public float cameraFollowSpeed;
 
     // Update is called once per frame
     void LateUpdate()
@@ -73,8 +74,9 @@ public class CameraFollow : MonoBehaviour
         var positionZ = Mathf.SmoothDamp(position.z, desiredPosition.z, ref velZ, xSmooth);
 
         position = new Vector3(positionX, positionY, positionZ);
-
-        transform.position = position;
+        
+        // transform.position = positon;
+        transform.position = Vector3.MoveTowards(transform.position, position, cameraFollowSpeed);
         transform.LookAt(targetToLookAt);
     }
 }

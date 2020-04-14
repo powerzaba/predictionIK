@@ -104,7 +104,7 @@ public class FeetPredictor
     {
         var groundPoint = Vector3.zero;
         var skyPosition = predictedPosition + Vector3.up * 1.2f;
-
+        
         Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 1.2f, Color.yellow);
         if (Physics.Raycast(skyPosition, Vector3.down, out var hit))
         {

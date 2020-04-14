@@ -14,13 +14,13 @@ public class FeetManager : MonoBehaviour
     private FeetPredictor _predictor;
     
     //test hip
-    private Vector3 prevHipPosition;
-    private float prevHipY;
-    private Vector3 prevRightPos;
-    private Vector3 prevLeftPos;
+    private float _prevHipY;
+    private Vector3 _prevRightPos;
+    private Vector3 _prevLeftPos;
+
+    private Quaternion _prevRightRot;
+    private Quaternion _prevLeftRot;
     
-    private float prevRightPosY;
-    private float prevLeftPosY;
     [SerializeField] private LayerMask environmentLayer;
     //test feet height
     [Range (0, 1f)]
@@ -47,6 +47,17 @@ public class FeetManager : MonoBehaviour
     private bool firstTime = true;
     private float time;
 
+    public Transform rightFootT;
+    public Transform leftFootT;
+
+    public float stepSpeed;
+    public float stepCurveSpeed;
+    public float pelvisSpeed;
+    public float curveTh;
+
+    private Vector3 _prevHipPos;
+    private bool _isRightBehind;
+    
     void Start()
     {
         _animator = GetComponent<Animator>();
@@ -57,12 +68,20 @@ public class FeetManager : MonoBehaviour
         _predictor = new FeetPredictor(_animator);
         _characterController = GetComponent<CharacterController>();
 
-        //StateManager.GetDataFromAnimator(_animator);
+        _prevRightPos = rightFootT.transform.position;
     }
 
     void Update()
     {
-          
+        //NOW IT'S CORRECTLY UPDATED AFTER THE IK PASS
+        _prevRightPos = rightFootT.position;
+        _prevLeftPos = leftFootT.position;
+        _prevRightRot = rightFootT.rotation;
+        _prevLeftRot = leftFootT.rotation;
+
+        var localRight = gameObject.transform.InverseTransformPoint(_prevRightPos);
+        var localLeft = gameObject.transform.InverseTransformPoint(_prevLeftPos);
+        _isRightBehind = (localRight.z <= localLeft.z);
     }
 
     private void OnAnimatorIK(int layerIndex)
@@ -74,10 +93,19 @@ public class FeetManager : MonoBehaviour
         var currentRight = StateManager.rightFootPosition;
         var currentLeft = StateManager.leftFootPosition;
 
-        //MovePelvisHeight(currentRight, currentLeft);
-
+        var r = _predictor.predictedRightFootPosition;
+        r.y += feetHeight;
+        var l = _predictor.predictedLeftFootPosition;
+        l.y += feetHeight;
         
-        //TODO: currently doing the boxcasting just for the right foot
+        var rightPass = (StateManager.rightFootGround) ? rightPositionIK : r;
+        var leftPass = (StateManager.leftFootGround) ? leftPositionIK : l;
+        
+        // MovePelvis(prevRightPos, prevLeftPos);
+        // MovePelvis(rightPositionIK, leftPositionIK);
+        MovePelvis(rightPass, leftPass);
+        // _prevHipPos = _animator.bodyPosition;
+        
         var rightFrom = _predictor.rightShadowPosition;
         var rightTo = _predictor.predictedRightFootPosition;
         rightFrom.y += feetHeight;
@@ -88,8 +116,8 @@ public class FeetManager : MonoBehaviour
         leftFrom.y += feetHeight;
         leftTo.y += feetHeight;
 
-        _feetController.CreateBoxCast(rightFrom, rightTo, midPointHeight, curveHeightTh);
-        _leftFeetController.CreateBoxCast(leftFrom, leftTo, midPointHeight, curveHeightTh);
+        _feetController.CreateBoxCast(rightFrom, rightTo, midPointHeight, curveHeightTh, curveTh);
+        _leftFeetController.CreateBoxCast(leftFrom, leftTo, midPointHeight, curveHeightTh, curveTh);
 
         _feetController.GetProjectionOnCurve(HumanBodyBones.RightFoot, currentRight);
         _leftFeetController.GetProjectionOnCurve(HumanBodyBones.LeftFoot, currentLeft);
@@ -97,7 +125,6 @@ public class FeetManager : MonoBehaviour
         rightPositionIK = GetGroundPoint(currentRight, true);
         leftPositionIK = GetGroundPoint(currentLeft, false);
         
-        //TODO: test for curve following for feet
         if (!StateManager.rightFootGround)
         {
             var shadowY = _predictor.rightShadowPosition.y;
@@ -105,10 +132,9 @@ public class FeetManager : MonoBehaviour
             
             //check how similar the two altitude need to be, so that the 
             //curve doesn't get followed while on flat surface
-            var diff = currentRight.y - currentLeft.y;
             if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _feetController.midPointHit)
             {
-                _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, currentRight);
+                _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);
             }
             
             //test interpolate quaternion
@@ -119,14 +145,15 @@ public class FeetManager : MonoBehaviour
         }
         else
         {
-            // MoveFeetToIkPoint(AvatarIKGoal.RightFoot, rightPositionIK, rightRotationIK, ref prevRightPos.y);
+            //TODO: IK ONLY THE Y POSITION PLS, NOT THE FULL POSITION
             _animator.SetIKPositionWeight(AvatarIKGoal.RightFoot, 1);
-            _animator.SetIKPosition(AvatarIKGoal.RightFoot, rightPositionIK);
+            var step =  stepSpeed * Time.deltaTime; // calculate distance to move
+            var targetIk = Vector3.MoveTowards(_prevRightPos, rightPositionIK, step);
+            _animator.SetIKPosition(AvatarIKGoal.RightFoot, targetIk);
             _animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, 1);
             _animator.SetIKRotation(AvatarIKGoal.RightFoot, rightRotationIK * _animator.GetIKRotation(AvatarIKGoal.RightFoot));
         }
         
-        //TODO: test for curve following for feet
         if (!StateManager.leftFootGround)
         {
             var shadowY = _predictor.leftShadowPosition.y;
@@ -136,27 +163,24 @@ public class FeetManager : MonoBehaviour
             //curve doesn't get followed while on flat surface
             if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _leftFeetController.midPointHit)
             {
-                _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, currentLeft);
+                _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);
             }
             
             //test interpolate quaternion
             var lerpTime = StateManager.leftFlightTime;
-            //var result = Quaternion.Lerp(currentRot, _predictor.predictedRightRotation, time / lerpTime);
             _animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, _predictor.leftFlightDuration/lerpTime);
             _animator.SetIKRotation(AvatarIKGoal.LeftFoot, _predictor.predictedLeftRotation * _animator.GetIKRotation(AvatarIKGoal.LeftFoot));
         }
         else
         {
-            //MoveFeetToIkPoint(AvatarIKGoal.LeftFoot, correctPosition, leftRotationIK, ref prevLeftPos.y);
+            //TODO: IK ONLY THE Y POSITION PLS, NOT THE FULL POSITION
             _animator.SetIKPositionWeight(AvatarIKGoal.LeftFoot, 1);
-            _animator.SetIKPosition(AvatarIKGoal.LeftFoot, leftPositionIK);
+            var step =  stepSpeed * Time.deltaTime; // calculate distance to move
+            var targetIk = Vector3.MoveTowards(_prevLeftPos, leftPositionIK, step);
+            _animator.SetIKPosition(AvatarIKGoal.LeftFoot, targetIk);
             _animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, 1);
             _animator.SetIKRotation(AvatarIKGoal.LeftFoot, leftRotationIK * _animator.GetIKRotation(AvatarIKGoal.LeftFoot));
         }
-        
-        
-        //prevRightPos = currentRight;
-        //prevLeftPos = currentLeft;
     }
     
     void MoveFeetToIkPoint(AvatarIKGoal foot, Vector3 positionIkHolder, Quaternion rotationIkHolder, ref float lastFootPositionY) {
@@ -166,7 +190,7 @@ public class FeetManager : MonoBehaviour
             targetIkPosition = this.gameObject.transform.InverseTransformPoint(targetIkPosition);
             positionIkHolder = this.gameObject.transform.InverseTransformPoint(positionIkHolder);
 
-            var yVariable = Mathf.Lerp(lastFootPositionY, positionIkHolder.y, 0.2f); //speed feet to IK
+            var yVariable = Mathf.Lerp(lastFootPositionY, positionIkHolder.y, 0.4f); //speed feet to IK
             targetIkPosition.y += yVariable;
             lastFootPositionY = yVariable;
 
@@ -176,24 +200,98 @@ public class FeetManager : MonoBehaviour
         _animator.SetIKPosition(foot, targetIkPosition);
     }
 
-    private void MovePelvisHeight(Vector3 right, Vector3 left) {
+    private void MovePelvis(Vector3 right, Vector3 left) {
 
-        if (right == Vector3.zero || left == Vector3.zero || Math.Abs(prevHipY) < 0.05f) {
-            prevHipY = _animator.bodyPosition.y;
+        if (right == Vector3.zero || left == Vector3.zero || _prevHipPos == Vector3.zero)
+        {
+            _prevHipPos = _animator.bodyPosition;
             return;
         }
         
-        var position = this.gameObject.transform.position;
-        var leftOffsetPosition = left.y - position.y;
-        var rightOffsetPosition = right.y - position.y;
+        var position = gameObject.transform.position.y;
+        var leftOffset = left.y - position;
+        var rightOffset = right.y - position;
+        var step = pelvisSpeed * Time.deltaTime;
+        var offset = (leftOffset < rightOffset) ? leftOffset : rightOffset;
+
+        if (leftOffset <= rightOffset)
+        {
+            if (!StateManager.leftFootGround)
+            {
+                if (!_isRightBehind)
+                {
+                    offset = rightOffset;
+                }
+                else
+                {
+                    offset = leftOffset;
+                }
+            }
+            else
+            {
+                offset = leftOffset;
+            }
+        }
+        else
+        {
+            if (!StateManager.rightFootGround)
+            {
+                if (_isRightBehind)
+                {
+                    offset = leftOffset;
+                }
+                else
+                {
+                    offset = rightOffset;
+                }
+            }
+            else
+            {
+                offset = rightOffset;
+            }
+        }
         
-        var totalOffset = (leftOffsetPosition < rightOffsetPosition) ? leftOffsetPosition : rightOffsetPosition;
-        var newPelvisPosition = _animator.bodyPosition + Vector3.up * totalOffset;
-        newPelvisPosition.y = Mathf.Lerp(prevHipY, newPelvisPosition.y, 0.4f) - TH;        
-        _animator.bodyPosition = newPelvisPosition;
-        
-        prevHipY = _animator.bodyPosition.y;
-        
+        var newBodyPosition = _animator.bodyPosition + Vector3.up * (offset - feetHeight);
+        newBodyPosition.y = Mathf.MoveTowards(_prevHipPos.y, newBodyPosition.y, step);
+        _animator.bodyPosition = newBodyPosition;
+        _prevHipPos = _animator.bodyPosition;
+
+        // var newBodyPosition = _animator.bodyPosition + Vector3.up * (offset - feetHeight);
+        // newBodyPosition.y = Mathf.MoveTowards(_prevHipPos.y, newBodyPosition.y, step);
+        // _animator.bodyPosition = newBodyPosition;
+        // _prevHipPos = _animator.bodyPosition;
+
+
+        // if (rightFootIkPosition == Vector3.zero || leftFootIkPosition == Vector3.zero || lastPelvisPositionY == 0.0f) {
+        //     lastPelvisPositionY = animator.bodyPosition.y;
+        //     return;
+        // }
+        //
+        // float leftOffsetPosition = leftFootIkPosition.y - model.transform.position.y;
+        // float rightOffsetPosition = rightFootIkPosition.y - model.transform.position.y;
+        //
+        // float totalOffset = (leftOffsetPosition < rightOffsetPosition) ? leftOffsetPosition : rightOffsetPosition;
+        //
+        // // Vector3 newPelvisPosition = animator.bodyPosition + Vector3.up * totalOffset/pelvisOffset;
+        // Vector3 newPelvisPosition = animator.bodyPosition + Vector3.up * totalOffset;
+        // newPelvisPosition.y = Mathf.Lerp(lastPelvisPositionY, newPelvisPosition.y, pelvisUpAndDownSpeed);        
+        // animator.bodyPosition = newPelvisPosition;
+        //
+        // lastPelvisPositionY = animator.bodyPosition.y;
+
+        //OLD STUFF OMG
+        // var position = gameObject.transform.position;
+        // var position = _prevHipPos;
+        // var leftOffset = left.y - position.y;
+        // var rightOffset = right.y - position.y;
+        //
+        // var smallestOffset = (leftOffset < rightOffset) ? leftOffset : rightOffset;
+        // var newPelvisPosition = _animator.bodyPosition + Vector3.up * smallestOffset;
+        // newPelvisPosition.y = Mathf.MoveTowards(_prevHipPos.y, newPelvisPosition.y, pelvisSpeed) - TH;
+        // // newPelvisPosition.y = Mathf.Lerp(prevHipY, newPelvisPosition.y, 0.4f) - TH;      
+        // _animator.bodyPosition = newPelvisPosition;
+        //
+        // prevHipY = _animator.bodyPosition.y;
     }
     
     private Vector3 GetGroundPoint(Vector3 predictedPosition, bool right)
@@ -230,14 +328,6 @@ public class FeetManager : MonoBehaviour
     {
         if (!Application.isPlaying) return;
 
-        // Gizmos.color = Color.red;
-        // if (StateManager.rightFootGround)
-        //     Gizmos.DrawCube(StateManager.rightFootPosition, new Vector3(0.2f,0.2f,0.2f));
-        //
-        //     Gizmos.color = Color.blue;
-        // if (StateManager.leftFootGround)
-        //     Gizmos.DrawSphere(StateManager.leftFootPosition, 0.1f);
-
         //Draw the current Direction
         Gizmos.color = Color.green;
         var current = StateManager.currentPosition;
@@ -252,35 +342,22 @@ public class FeetManager : MonoBehaviour
         Gizmos.DrawSphere(StateManager.currentPosition, 0.05f);
         
         //Draw the right shadow position
-        Gizmos.color = Color.blue;
+        Gizmos.color = new Color(0f, 0f, 0.25f);
         Gizmos.DrawSphere(_predictor.rightShadowPosition, 0.05f);
         
         //Draw the left shadow position
-        Gizmos.color = Color.magenta;
+        Gizmos.color = new Color(0.32f, 0f, 0.32f);
         Gizmos.DrawSphere(_predictor.leftShadowPosition, 0.05f);
         
         //Draw the predicted right foot position
-        Gizmos.color = Color.green;
+        Gizmos.color = Color.blue;
         var pRight = _predictor.predictedRightFootPosition;
         Gizmos.DrawSphere(pRight, 0.05f);
 
         //Draw the predicted left foot position
-        Gizmos.color = Color.green;
+        Gizmos.color = Color.magenta;
         var pLeft = _predictor.predictedLeftFootPosition;
         Gizmos.DrawSphere(pLeft, 0.05f);
-        
-        //Draw the previous positions
-        // Color lightRed = new Color(244, 141, 112);
-        // Color lightBlue = new Color(104, 172, 221);
-        //
-        // Gizmos.color = lightRed;
-        // Vector3 prevleft = _predictor.previousFootprintLeft;
-        // Gizmos.DrawSphere(prevleft, 0.1f);
-        //
-        // Gizmos.color = lightBlue;
-        // Vector3 prevRight = _predictor.previousFootprintRight;
-        // Gizmos.DrawSphere(prevRight, 0.1f);
-
 
         //drawing the curve for both feet
         Gizmos.color = Color.red;
@@ -298,9 +375,9 @@ public class FeetManager : MonoBehaviour
             Gizmos.DrawLine(globalStart, globalEnd);
         }
         
-        //drawing the highest mid point
-        Gizmos.color = Color.black;
-        Gizmos.DrawSphere(matrix.MultiplyPoint3x4(_feetController._midPoint), 0.05f);
+        // //drawing the highest mid point
+        // Gizmos.color = Color.black;
+        // Gizmos.DrawSphere(matrix.MultiplyPoint3x4(_feetController._midPoint), 0.05f);
         
         //drawing the cube for casting
         var currentMatrix = Gizmos.matrix;
@@ -317,10 +394,6 @@ public class FeetManager : MonoBehaviour
         var projectionPos = _feetController.localFootProjection;
         Gizmos.DrawSphere(projectionPos, 0.05f);
         Gizmos.matrix = currentMatrix;
-        
-        //Draw newglobalPosition
-        Gizmos.color = Color.blue;
-        Gizmos.DrawSphere(_feetController.newGlobalPosition, 0.05f);
 
         //Draw curve for the left foot
         Gizmos.color = Color.red;
@@ -339,8 +412,8 @@ public class FeetManager : MonoBehaviour
         }
         
         // //drawing the highest mid point
-        Gizmos.color = Color.black;
-        Gizmos.DrawSphere(leftMatrix.MultiplyPoint3x4(_feetController._midPoint), 0.05f);
+        // Gizmos.color = Color.black;
+        // Gizmos.DrawSphere(leftMatrix.MultiplyPoint3x4(_feetController._midPoint), 0.05f);
         
         // //drawing the cube for casting
         // Gizmos.color = Color.red;
@@ -349,17 +422,30 @@ public class FeetManager : MonoBehaviour
         // Gizmos.DrawCube(leftC, _feetController.half * 2);
         
         //Draw current position
-        Gizmos.color = Color.green;
+        Gizmos.color = Color.yellow;
         Gizmos.DrawSphere(_feetController.newGlobalPosition, 0.05f);
         Gizmos.DrawSphere(_leftFeetController.newGlobalPosition, 0.05f);
+
+        Gizmos.color = new Color(0.41f, 0.79f, 1f);
+        Gizmos.DrawSphere(rightPositionIK, 0.05f);
+        
+        Gizmos.color = new Color(0.41f, 0.79f, 1f);
+        Gizmos.DrawSphere(leftPositionIK, 0.05f);
+        
+        Gizmos.color = Color.black;
+        Gizmos.DrawSphere(_prevHipPos, 0.05f);
+        ;
     }
 
-    void OnGUI()
+    private void OnGUI()
     {        
         GUI.Label(new Rect(0, 60, 200, 20), "Current Flight Time :" + StateManager.currentFlightTime);
         GUI.Label(new Rect(0, 90, 200, 20), "Next Foot Time :" + _predictor.nextRightFootTime);
         GUI.Label(new Rect(0, 120, 200, 20), "Time :" + Time.time);
         GUI.Label(new Rect(0, 150, 200, 20), "Current Velocity :" + StateManager.currentVelocity);
         GUI.Label(new Rect(0, 180, 200, 20), "Current Duration :" + _predictor.rightFlightDuration);
+        
+        GUI.Label(new Rect(400, 60, 200, 60), "RIGHT :" + StateManager.rightFootGround);
+        GUI.Label(new Rect(400, 120, 200, 60), "LEFT :" + StateManager.leftFootGround);
     }
 }
