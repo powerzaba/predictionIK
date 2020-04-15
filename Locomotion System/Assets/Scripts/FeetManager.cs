@@ -398,14 +398,14 @@ public class FeetManager : MonoBehaviour
         //Draw curve for the left foot
         Gizmos.color = Color.red;
         var leftMatrix = _leftFeetController.matrix;
-        var leftStep = _feetController._localTargetPosition.z / 100;
+        var leftStep = _leftFeetController._localTargetPosition.z / 100;
         var leftStart = 0f;
         var leftEndPoint = 0f;
         for (int i = 0; i < 100; i++)
         {
             var globalStart = leftMatrix.MultiplyPoint3x4(new Vector3(0, leftEndPoint, leftStart));
             leftStart += leftStep;
-            leftEndPoint = (float)_feetController._curve.Interpolate(leftStart);
+            leftEndPoint = (float)_leftFeetController._curve.Interpolate(leftStart);
             var globalEnd = leftMatrix.MultiplyPoint3x4(new Vector3(0, leftEndPoint, leftStart));
             
             Gizmos.DrawLine(globalStart, globalEnd);
@@ -434,7 +434,9 @@ public class FeetManager : MonoBehaviour
         
         Gizmos.color = Color.black;
         Gizmos.DrawSphere(_prevHipPos, 0.05f);
-        ;
+
+        Gizmos.color = Color.blue;
+        Gizmos.DrawCube(gameObject.transform.position, new Vector3(0.1f, 0.1f, 0.1f));
     }
 
     private void OnGUI()

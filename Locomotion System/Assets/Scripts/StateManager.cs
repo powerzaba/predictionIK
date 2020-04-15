@@ -137,7 +137,6 @@ public static class StateManager
         Debug.DrawLine(predictedPosition, predictedPosition + Vector3.down * 2f, Color.yellow);
         if (Physics.Raycast(predictedPosition, Vector3.down, out var hit, 2f, mask))
         {
-            Debug.Log("HIIIT");
             groundPoint = hit.point;
         }
         
