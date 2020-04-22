@@ -29,14 +29,14 @@ public static class StateManager
     
     public static Vector3 currentRightDis = Vector3.zero;
     public static Vector3 currentLeftDis = Vector3.zero;
-    //public static Vector3 currentVelocity = Vector3.zero;
-    public static float currentVelocity;
+    public static Vector3 currentVelocity = Vector3.zero;
+    // public static float currentVelocity;
     public static Vector3 currentDirectionModel;
     
-    public static void UpdateState(Animator animator, CharacterController ch)
+    public static void UpdateState(Animator animator, GameObject model)
     {
         UpdateFeetStatus(animator);
-        UpdateDirectionAndVelocity(animator);
+        UpdateDirectionAndVelocity(animator, model);
         UpdateFeetData(animator);
     }
 
@@ -81,7 +81,7 @@ public static class StateManager
         leftFlightTime = leftFlight;
         currentRightDis = new Vector3(rightDisplacementX, 0, rightDisplacementZ);
         currentLeftDis = new Vector3(leftDisplacementX, 0, leftDisplacementZ);
-        //currentVelocity = velocity;
+        currentVelocity = velocity;
     }
 
     public static void UpdateFeetStatus(Animator animator)
@@ -117,13 +117,15 @@ public static class StateManager
         leftPreviousVal = leftValue;
     }
 
-    public static void UpdateDirectionAndVelocity(Animator animator)
+    public static void UpdateDirectionAndVelocity(Animator animator, GameObject model)
     {
-        currentPosition = animator.bodyPosition;
+        // currentPosition = animator.bodyPosition;
+        currentPosition = model.transform.position;
         currentPosition.y = GroundPoint(currentPosition).y;
         // currentPosition.y = 0;
-        currentVelocity = Vector3.Distance(previousPosition, currentPosition) / Time.deltaTime;
+        // currentVelocity = Vector3.Distance(previousPosition, currentPosition) / Time.deltaTime;
         Vector3 diff = (currentPosition - previousPosition).normalized;
+        diff.y = 0f;
 
         currentDirection = diff;
         previousPosition = currentPosition;

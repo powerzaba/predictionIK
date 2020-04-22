@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public class FeetManager : MonoBehaviour
 {
@@ -58,6 +60,14 @@ public class FeetManager : MonoBehaviour
     private Vector3 _prevHipPos;
     private bool _isRightBehind;
     
+    //catmull test
+    public bool useCatmull = false;
+    public float tension = 0f;
+    public float alpha = 0.5f;
+    [Range (0, 1f)]
+    [SerializeField] private float curveStartEndHeight = 0;
+    
+    
     void Start()
     {
         _animator = GetComponent<Animator>();
@@ -86,7 +96,7 @@ public class FeetManager : MonoBehaviour
 
     private void OnAnimatorIK(int layerIndex)
     {
-        StateManager.UpdateState(_animator, _characterController);
+        StateManager.UpdateState(_animator, gameObject);
         StateManager.UpdateModelDirection(_model);
         _predictor.UpdateState();
         _predictor.PredictFeetPosition();
@@ -108,19 +118,19 @@ public class FeetManager : MonoBehaviour
         
         var rightFrom = _predictor.rightShadowPosition;
         var rightTo = _predictor.predictedRightFootPosition;
-        rightFrom.y += feetHeight;
-        rightTo.y += feetHeight;
+        rightFrom.y += curveStartEndHeight;
+        rightTo.y += curveStartEndHeight;
         
         var leftFrom = _predictor.leftShadowPosition;
         var leftTo = _predictor.predictedLeftFootPosition;
-        leftFrom.y += feetHeight;
-        leftTo.y += feetHeight;
+        leftFrom.y += curveStartEndHeight;
+        leftTo.y += curveStartEndHeight;
 
-        _feetController.CreateBoxCast(rightFrom, rightTo, midPointHeight, curveHeightTh, curveTh);
-        _leftFeetController.CreateBoxCast(leftFrom, leftTo, midPointHeight, curveHeightTh, curveTh);
+        _feetController.CreateBoxCast(rightFrom, rightTo, midPointHeight, curveHeightTh, curveTh, useCatmull);
+        _leftFeetController.CreateBoxCast(leftFrom, leftTo, midPointHeight, curveHeightTh, curveTh, useCatmull);
 
-        _feetController.GetProjectionOnCurve(HumanBodyBones.RightFoot, currentRight);
-        _leftFeetController.GetProjectionOnCurve(HumanBodyBones.LeftFoot, currentLeft);
+        _feetController.GetProjectionOnCurve(currentRight);
+        _leftFeetController.GetProjectionOnCurve(currentLeft);
         
         rightPositionIK = GetGroundPoint(currentRight, true);
         leftPositionIK = GetGroundPoint(currentLeft, false);
@@ -134,7 +144,15 @@ public class FeetManager : MonoBehaviour
             //curve doesn't get followed while on flat surface
             if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _feetController.midPointHit)
             {
-                _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);
+                if (!useCatmull)
+                {
+                    _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);                    
+                }
+                else
+                {
+                    //do nothing for now
+                    _feetController.MoveFeetCatmull(AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);
+                }
             }
             
             //test interpolate quaternion
@@ -163,7 +181,15 @@ public class FeetManager : MonoBehaviour
             //curve doesn't get followed while on flat surface
             if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _leftFeetController.midPointHit)
             {
-                _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);
+                if (!useCatmull)
+                {
+                    _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);    
+                }
+                else
+                {
+                    //do nothing for now   
+                    _leftFeetController.MoveFeetCatmull(AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);    
+                }
             }
             
             //test interpolate quaternion
@@ -213,7 +239,14 @@ public class FeetManager : MonoBehaviour
         var rightOffset = right.y - position;
         var step = pelvisSpeed * Time.deltaTime;
         var offset = (leftOffset < rightOffset) ? leftOffset : rightOffset;
-
+        
+        //test if both are in the air
+        // if (!StateManager.leftFootGround && !StateManager.rightFootGround)
+        // {
+        //     _prevHipPos = _animator.bodyPosition;
+        //     return;
+        // }
+        
         if (leftOffset <= rightOffset)
         {
             if (!StateManager.leftFootGround)
@@ -301,6 +334,33 @@ public class FeetManager : MonoBehaviour
         var skyPosition = predictedPosition + Vector3.up * 1.2f;
 
         Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 2f, Color.magenta);
+        //test OMG
+        var currentDirection = StateManager.currentDirection;
+        var rot = Quaternion.LookRotation(currentDirection);
+        var a1 = predictedPosition + rot * new Vector3(0.05f, 0, 0.05f);
+        var a2 = predictedPosition + rot * new Vector3(-0.05f, 0, 0.05f);
+        var a3 = predictedPosition + rot * new Vector3(-0.05f, 0, -0.05f);
+        var a4 = predictedPosition + rot * new Vector3(0.05f, 0, -0.05f);
+        var sky1 = _predictor.GetSkyPosition(1.2f, a1);
+        var sky2 = _predictor.GetSkyPosition(1.2f, a2);
+        var sky3 = _predictor.GetSkyPosition(1.2f, a3);
+        var sky4 = _predictor.GetSkyPosition(1.2f, a4);
+        var hit1 = Physics.Raycast(sky1, Vector3.down, out var h1,4f, environmentLayer);
+        var hit2 = Physics.Raycast(sky2, Vector3.down, out var h2,4f, environmentLayer);
+        var hit3 = Physics.Raycast(sky3, Vector3.down, out var h3,4f, environmentLayer);
+        var hit4 = Physics.Raycast(sky4, Vector3.down, out var h4,4f, environmentLayer);
+        Debug.DrawLine(sky1, sky1 + Vector3.down * 1.2f, Color.yellow);
+        Debug.DrawLine(sky2, sky2 + Vector3.down * 1.2f, Color.yellow);
+        Debug.DrawLine(sky3, sky3 + Vector3.down * 1.2f, Color.yellow);
+        Debug.DrawLine(sky4, sky4 + Vector3.down * 1.2f, Color.yellow);
+        
+        var test = new float[4];
+        test[0] = h1.point.y;
+        test[1] = h2.point.y;
+        test[2] = h3.point.y;
+        test[3] = h4.point.y;
+        var res = _predictor.GetPopularElement(test);
+        
         if (Physics.Raycast(skyPosition, Vector3.down, out hit, 2f, environmentLayer))
         {
             
@@ -321,6 +381,7 @@ public class FeetManager : MonoBehaviour
             }
         }
         
+        return new Vector3(predictedPosition.x, res, predictedPosition.z);
         return groundPoint;
     }
 
@@ -360,20 +421,42 @@ public class FeetManager : MonoBehaviour
         Gizmos.DrawSphere(pLeft, 0.05f);
 
         //drawing the curve for both feet
-        Gizmos.color = Color.red;
         var matrix = _feetController.matrix;
-        var step = _feetController._localTargetPosition.z / 100;
-        var start = 0f;
-        var endPoint = 0f;
-        for (int i = 0; i < 100; i++)
+
+        if (!useCatmull)
         {
-            var globalStart = matrix.MultiplyPoint3x4(new Vector3(0, endPoint, start));
-            start += step;
-            endPoint = (float)_feetController._curve.Interpolate(start);
-            var globalEnd = matrix.MultiplyPoint3x4(new Vector3(0, endPoint, start));
+            Gizmos.color = Color.red;
+            var step = _feetController.localTargetPosition.z / 100;
+            var start = 0f;
+            var endPoint = 0f;
+            for (int i = 0; i < 100; i++)
+            {
+                var globalStart = matrix.MultiplyPoint3x4(new Vector3(0, endPoint, start));
+                start += step;
+                endPoint = (float)_feetController.curve.Interpolate(start);
+                var globalEnd = matrix.MultiplyPoint3x4(new Vector3(0, endPoint, start));
             
-            Gizmos.DrawLine(globalStart, globalEnd);
+                Gizmos.DrawLine(globalStart, globalEnd);
+            }    
         }
+        else
+        {
+            //DRAWING CATMULL RIGHT
+            Gizmos.color = Color.blue;
+            var step = _feetController.localTargetPosition.z / 100;
+            var start = Vector3.zero;
+            var end = start + new Vector3(0, 0, step);
+            for (int i = 0; i < 100; i++)
+            {
+                var a = _feetController.catmullRomSpline.Interpolate(end, tension, alpha);
+                var globalA = matrix.MultiplyPoint3x4(a);
+                var globalStart = matrix.MultiplyPoint3x4(start);
+                Gizmos.DrawLine(globalStart, globalA);
+                start = a;    
+                end += new Vector3(0, 0, step);
+            }
+        }
+        
         
         // //drawing the highest mid point
         // Gizmos.color = Color.black;
@@ -381,11 +464,11 @@ public class FeetManager : MonoBehaviour
         
         //drawing the cube for casting
         var currentMatrix = Gizmos.matrix;
-        // Gizmos.color = Color.red;
-        // Gizmos.matrix = matrix;
-        // var c = matrix.inverse.MultiplyPoint3x4(_feetController.center);
-        // Gizmos.DrawCube(c, _feetController.half * 2);
-        // Gizmos.matrix = currentMatrix;
+        Gizmos.color = Color.red;
+        Gizmos.matrix = matrix;
+        var c = matrix.inverse.MultiplyPoint3x4(_feetController.center);
+        Gizmos.DrawCube(c, _feetController.half * 2);
+        Gizmos.matrix = currentMatrix;
         
         //Draw right foot projection
         Gizmos.color = Color.magenta;
@@ -396,30 +479,53 @@ public class FeetManager : MonoBehaviour
         Gizmos.matrix = currentMatrix;
 
         //Draw curve for the left foot
-        Gizmos.color = Color.red;
         var leftMatrix = _leftFeetController.matrix;
-        var leftStep = _leftFeetController._localTargetPosition.z / 100;
-        var leftStart = 0f;
-        var leftEndPoint = 0f;
-        for (int i = 0; i < 100; i++)
+
+        if (!useCatmull)
         {
-            var globalStart = leftMatrix.MultiplyPoint3x4(new Vector3(0, leftEndPoint, leftStart));
-            leftStart += leftStep;
-            leftEndPoint = (float)_leftFeetController._curve.Interpolate(leftStart);
-            var globalEnd = leftMatrix.MultiplyPoint3x4(new Vector3(0, leftEndPoint, leftStart));
+            Gizmos.color = Color.red;
+            var leftStep = _leftFeetController.localTargetPosition.z / 100;
+            var leftStart = 0f;
+            var leftEndPoint = 0f;
+            for (int i = 0; i < 100; i++)
+            {
+                var globalStart = leftMatrix.MultiplyPoint3x4(new Vector3(0, leftEndPoint, leftStart));
+                leftStart += leftStep;
+                leftEndPoint = (float)_leftFeetController.curve.Interpolate(leftStart);
+                var globalEnd = leftMatrix.MultiplyPoint3x4(new Vector3(0, leftEndPoint, leftStart));
             
-            Gizmos.DrawLine(globalStart, globalEnd);
+                Gizmos.DrawLine(globalStart, globalEnd);
+            }    
         }
-        
+        else
+        {
+            //DRAWING CATMULL LEFT
+            Gizmos.color = Color.blue;
+            var step = _leftFeetController.localTargetPosition.z / 100;
+            var start = Vector3.zero;
+            var end = start + new Vector3(0, 0, step);
+            for (int i = 0; i < 100; i++)
+            {
+                var a = _leftFeetController.catmullRomSpline.Interpolate(end, tension, alpha);
+                var globalA = leftMatrix.MultiplyPoint3x4(a);
+                var globalStart = leftMatrix.MultiplyPoint3x4(start);
+                Gizmos.DrawLine(globalStart, globalA);
+                start = a;    
+                end += new Vector3(0, 0, step);
+            }
+        }
+
         // //drawing the highest mid point
         // Gizmos.color = Color.black;
         // Gizmos.DrawSphere(leftMatrix.MultiplyPoint3x4(_feetController._midPoint), 0.05f);
         
         // //drawing the cube for casting
         // Gizmos.color = Color.red;
+        // currentMatrix = Gizmos.matrix;
         // Gizmos.matrix = leftMatrix;
         // var leftC = leftMatrix.inverse.MultiplyPoint3x4(_feetController.center);
         // Gizmos.DrawCube(leftC, _feetController.half * 2);
+        // Gizmos.matrix = currentMatrix;
         
         //Draw current position
         Gizmos.color = Color.yellow;
@@ -437,6 +543,23 @@ public class FeetManager : MonoBehaviour
 
         Gizmos.color = Color.blue;
         Gizmos.DrawCube(gameObject.transform.position, new Vector3(0.1f, 0.1f, 0.1f));
+
+        DrawHitPoints(matrix, leftMatrix);
+    }
+
+    private void DrawHitPoints(Matrix4x4 matrix, Matrix4x4 leftMatrix)
+    {
+        Gizmos.color = Color.red;
+        var curr = Gizmos.matrix;
+        Gizmos.matrix = matrix;
+        Gizmos.DrawSphere(_feetController.highestHitPoint, 0.05f);
+        Gizmos.matrix = curr;
+        
+        Gizmos.color = Color.green;
+        curr = Gizmos.matrix;
+        Gizmos.matrix = leftMatrix;
+        Gizmos.DrawSphere(_leftFeetController.highestHitPoint, 0.05f);
+        Gizmos.matrix = curr;
     }
 
     private void OnGUI()
