@@ -32,19 +32,8 @@ public class AnimationAnalyzer
 
         var rightPosInPlace = _sampler._rightFootPos.inPlacePosition;
         var leftPosInPlace = _sampler._leftFootPos.inPlacePosition;
-
-        if (_clip.name == "PIK_Walk")
-        {
-            Debug.Log("Right Foot now");
-        }
         
         var rightData = GenerateFlightTimes(rightGroundTimes, rightPosInPlace, rightPos);
-
-        if (_clip.name == "PIK_Walk")
-        {
-            Debug.Log("Left Foot now");
-        }
-        
         var leftData = GenerateFlightTimes(leftGroundTimes, leftPosInPlace, leftPos);
 
         _eventManager.InsertFlightTimeCurve(rightData.f, leftData.f);

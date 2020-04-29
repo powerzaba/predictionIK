@@ -60,9 +60,9 @@ public class FeetPredictor
         var rightFlightTime = StateManager.currentFlightTime;
         var leftFlightTime = StateManager.leftFlightTime;
         
-        var currentVelocity = currentRotation * StateManager.currentVelocity;
+        //var currentVelocity = currentRotation * StateManager.currentVelocity;
 
-        // var currentVelocity = StateManager.currentVelocity * currentDirection;
+        var currentVelocity = StateManager.currentVelocity * currentDirection;
         var currentTime = Time.time;
         
         var rightRemainingTime = rightFlightTime - rightFlightDuration;
@@ -78,13 +78,6 @@ public class FeetPredictor
 
         predictedRootPositionRight = StateManager.currentPosition + (currentVelocity * (nextRightFootprintTime - currentTime));
         predictedRootPositionLeft = StateManager.currentPosition + (currentVelocity * (nextLeftFootprintTime - currentTime));
-        Debug.Log("CURRENT DIRECTION: " + currentRotation);
-        Debug.Log("CURRENT POS: " + StateManager.currentPosition);
-        Debug.Log("current velocity: " + currentVelocity);
-        Debug.Log("nextright footprint time: " + nextRightFootprintTime);
-        Debug.Log("Current TIME: " + currentTime);
-        Debug.Log("Inside the predictor ROOT class is: " + predictedRootPositionRight);
-
 
         //Test offset
         Vector3 offset = currentRotation * new Vector3(0, 0, 0);

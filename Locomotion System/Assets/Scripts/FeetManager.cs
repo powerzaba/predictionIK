@@ -335,6 +335,7 @@ public class FeetManager : MonoBehaviour
 
         Debug.DrawLine(skyPosition, skyPosition + Vector3.down * 2f, Color.magenta);
         //test OMG
+        /*
         var currentDirection = StateManager.currentDirection;
         var rot = Quaternion.LookRotation(currentDirection);
         var a1 = predictedPosition + rot * new Vector3(0.05f, 0, 0.05f);
@@ -359,7 +360,7 @@ public class FeetManager : MonoBehaviour
         test[1] = h2.point.y;
         test[2] = h3.point.y;
         test[3] = h4.point.y;
-        var res = _predictor.GetPopularElement(test);
+        var res = _predictor.GetPopularElement(test);*/
         
         if (Physics.Raycast(skyPosition, Vector3.down, out hit, 2f, environmentLayer))
         {
@@ -381,7 +382,7 @@ public class FeetManager : MonoBehaviour
             }
         }
         
-        return new Vector3(predictedPosition.x, res, predictedPosition.z);
+        //return new Vector3(predictedPosition.x, res, predictedPosition.z);
         return groundPoint;
     }
 
