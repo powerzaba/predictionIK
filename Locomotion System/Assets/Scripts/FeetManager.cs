@@ -137,29 +137,33 @@ public class FeetManager : MonoBehaviour
         
         if (!StateManager.rightFootGround)
         {
-            var shadowY = _predictor.rightShadowPosition.y;
-            var predictedY = _predictor.predictedRightFootPosition.y;
-            
-            //check how similar the two altitude need to be, so that the 
-            //curve doesn't get followed while on flat surface
-            if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _feetController.midPointHit)
+            if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
             {
-                if (!useCatmull)
-                {
-                    _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);                    
-                }
-                else
-                {
-                    //do nothing for now
-                    _feetController.MoveFeetCatmull(AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);
-                }
-            }
+                var shadowY = _predictor.rightShadowPosition.y;
+                var predictedY = _predictor.predictedRightFootPosition.y;
             
-            //test interpolate quaternion
-            var lerpTime = StateManager.rightFlightTime;
-            //var result = Quaternion.Lerp(currentRot, _predictor.predictedRightRotation, time / lerpTime);
-            _animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, _predictor.rightFlightDuration/lerpTime);
-            _animator.SetIKRotation(AvatarIKGoal.RightFoot, _predictor.predictedRightRotation * _animator.GetIKRotation(AvatarIKGoal.RightFoot));
+                //check how similar the two altitude need to be, so that the 
+                //curve doesn't get followed while on flat surface
+                if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _feetController.midPointHit)
+                {
+                    if (!useCatmull)
+                    {
+                        _feetController.MoveFeetAlongCurve(HumanBodyBones.RightFoot, AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);                    
+                    }
+                    else
+                    {
+                        //do nothing for now
+                        _feetController.MoveFeetCatmull(AvatarIKGoal.RightFoot, _prevRightPos, stepCurveSpeed);
+                    }
+                }
+            
+                //test interpolate quaternion
+                var lerpTime = StateManager.rightFlightTime;
+                //var result = Quaternion.Lerp(currentRot, _predictor.predictedRightRotation, time / lerpTime);
+                _animator.SetIKRotationWeight(AvatarIKGoal.RightFoot, _predictor.rightFlightDuration/lerpTime);
+                _animator.SetIKRotation(AvatarIKGoal.RightFoot, _predictor.predictedRightRotation * _animator.GetIKRotation(AvatarIKGoal.RightFoot));
+            }  
+            
         }
         else
         {
@@ -174,28 +178,31 @@ public class FeetManager : MonoBehaviour
         
         if (!StateManager.leftFootGround)
         {
-            var shadowY = _predictor.leftShadowPosition.y;
-            var predictedY = _predictor.predictedLeftFootPosition.y;
-            
-            //check how similar the two altitude need to be, so that the 
-            //curve doesn't get followed while on flat surface
-            if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _leftFeetController.midPointHit)
+            if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
             {
-                if (!useCatmull)
-                {
-                    _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);    
-                }
-                else
-                {
-                    //do nothing for now   
-                    _leftFeetController.MoveFeetCatmull(AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);    
-                }
-            }
+                var shadowY = _predictor.leftShadowPosition.y;
+                var predictedY = _predictor.predictedLeftFootPosition.y;
             
-            //test interpolate quaternion
-            var lerpTime = StateManager.leftFlightTime;
-            _animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, _predictor.leftFlightDuration/lerpTime);
-            _animator.SetIKRotation(AvatarIKGoal.LeftFoot, _predictor.predictedLeftRotation * _animator.GetIKRotation(AvatarIKGoal.LeftFoot));
+                //check how similar the two altitude need to be, so that the 
+                //curve doesn't get followed while on flat surface
+                if (Mathf.Abs(shadowY - predictedY) > followCurveTh || _leftFeetController.midPointHit)
+                {
+                    if (!useCatmull)
+                    {
+                        _leftFeetController.MoveFeetAlongCurve(HumanBodyBones.LeftFoot, AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);    
+                    }
+                    else
+                    {
+                        //do nothing for now   
+                        _leftFeetController.MoveFeetCatmull(AvatarIKGoal.LeftFoot, _prevLeftPos, stepCurveSpeed);    
+                    }
+                }
+            
+                //test interpolate quaternion
+                var lerpTime = StateManager.leftFlightTime;
+                _animator.SetIKRotationWeight(AvatarIKGoal.LeftFoot, _predictor.leftFlightDuration/lerpTime);
+                _animator.SetIKRotation(AvatarIKGoal.LeftFoot, _predictor.predictedLeftRotation * _animator.GetIKRotation(AvatarIKGoal.LeftFoot));    
+            }
         }
         else
         {

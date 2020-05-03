@@ -47,8 +47,25 @@ public class AnalysisManager
 
         foreach (var clip in _clipList)
         {
+            //Remove grounded information curves
             clip.SetCurve("", typeof(Animator), "LeftFootCurve", null);
             clip.SetCurve("", typeof(Animator), "RightFootCurve", null);
+            
+            //Remove flight time curves
+            clip.SetCurve("", typeof(Animator), "LeftFlightCurve", null);
+            clip.SetCurve("", typeof(Animator), "RightFlightCurve", null);
+            
+            //Remove displacement curves, X
+            clip.SetCurve("", typeof(Animator), "LeftDisplacementX", null);
+            clip.SetCurve("", typeof(Animator), "RightDisplacementX", null);
+            
+            //Remove displacement curves, Z
+            clip.SetCurve("", typeof(Animator), "LeftDisplacementZ", null);
+            clip.SetCurve("", typeof(Animator), "RightDisplacementZ", null);
+            
+            //Remove step length curves
+            clip.SetCurve("", typeof(Animator), "LeftStrideLength", null);
+            clip.SetCurve("", typeof(Animator), "RightStrideLength", null);
         }
     }
 }

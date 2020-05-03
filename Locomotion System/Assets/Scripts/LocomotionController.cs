@@ -70,10 +70,7 @@ public class LocomotionController : MonoBehaviour
         float inputX = Input.GetAxis("Horizontal");
         float inputZ = Input.GetAxis("Vertical");
         speed = new Vector2(inputX, inputZ).magnitude;
-        //if (speed >= 0)
-        //{
-        //    speed = 0;
-        //}
+       
         //TODO FIX ANIMATOR STOP CONDITION
         if (lockSpeed)
         {
@@ -88,9 +85,6 @@ public class LocomotionController : MonoBehaviour
 
       
         if (moveDirection != Vector3.zero) {
-            //Quaternion newRotation = Quaternion.Lerp(lastRotation, Quaternion.LookRotation(moveDirection), 0.1f);
-            //model.transform.rotation = newRotation;
-            //model.transform.rotation = Quaternion.Lerp(model.transform.rotation, Quaternion.LookRotation(moveDirection), 14);            
             var singleStep = rotationSpeed * Time.deltaTime;
             transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(moveDirection), singleStep);
         }

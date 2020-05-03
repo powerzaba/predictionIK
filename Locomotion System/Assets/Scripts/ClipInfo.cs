@@ -25,16 +25,10 @@ public class ClipInfo : EditorWindow
     {
         EditorGUILayout.LabelField("Sample Number");
         _sampleNumber = EditorGUILayout.IntField(_sampleNumber);
-
-        EditorGUILayout.LabelField("Ground Treshold");
-        _groundTh = EditorGUILayout.FloatField(_groundTh);
-
+        
         EditorGUILayout.LabelField("Velocity Treshold");
         _velocityTh = EditorGUILayout.FloatField(_velocityTh);
-
-        EditorGUILayout.LabelField("Idle Animation");
-        _idleClip = EditorGUILayout.ObjectField(_idleClip, typeof(AnimationClip), false) as AnimationClip;
-
+        
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Analyze Animation"))
         {
@@ -57,13 +51,7 @@ public class ClipInfo : EditorWindow
     }
 
     private void AnalyzeAnimation()
-    {        
-        if (_idleClip == null)
-        {
-            EditorUtility.DisplayDialog("Missing Idle", "Please select an Idle Animation", "ok");
-            return;
-        }
-
+    {
         _analysisManager = new AnalysisManager();
         _analysisManager.AnalyzeAnimations(_sampleNumber, _velocityTh, _smoothTh);
     }
